@@ -3,6 +3,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import fetch from 'node-fetch';
 import 'dotenv/config.js';
+import cors from 'cors';
 
 // Chat ve LLM kullanımı (varsa)
 import { askWit, askGemini, generateResponse } from './witTest.js';
@@ -11,6 +12,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 app.use(bodyParser.json());
 
+app.use(cors());
 // OpenAI GPT fallback
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || null;
 
