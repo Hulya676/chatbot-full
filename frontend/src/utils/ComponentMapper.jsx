@@ -14,36 +14,34 @@ export const COMPONENT_TYPES = { //gönderilen mesaja göre components
     NOBETCI_ECZANE: 'nöbetçi eczane'
 };
 
-export const createComponentByType = (type, props = {}) => {
+export const createComponentByType = (type = {}) => {
     const id = Date.now();
     
     switch (type) {
         case COMPONENT_TYPES.RANDEVU_AL:
             return {
                 component: createComponentResponse(
-                    <RandevuAl
-                        id={id}
-                        onRemoveFormMessage={removeRandevuFormMessage}
-                        setMessages={props.setMessages}
-                        onResult={props.onResult}
-                    />,
+                    'RandevuAl', 
+                    {
+                        id: id
+                    },
                     id
                 ),
                 id
             };
         case COMPONENT_TYPES.SONUC_GORUNTULE:
             return {
-                component: createComponentResponse(<SonucGoruntule />),
+                component: createComponentResponse('SonucGoruntule', id),
                 id
             };
         case COMPONENT_TYPES.HASTANE_BILGISI:
             return {
-                component: createComponentResponse(<HastaneBilgisiAl />),
+                component: createComponentResponse('HastaneBilgisiAl', id),
                 id
             };
         case COMPONENT_TYPES.NOBETCI_ECZANE:
             return {
-                component: createComponentResponse(<NobetciEczane />),
+                component: createComponentResponse('NobetciEczane', id),
                 id
             };
         default:

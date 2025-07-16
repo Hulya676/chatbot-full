@@ -15,37 +15,36 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
 
     const [currentStep, setCurrentStep] = useState(1);
     const [sendMessage] = useSendMessageMutation();
+    const [showResult, setShowResult] = useState(false);
+    const [sonucComponent, setSonucComponent] = useState(null);
 
     const today = new Date();
     const formatDate = (date) => date.toISOString().split("T")[0];
 
-    
+
     const handleConfirm = () => {
 
         // Önce form mesajını kaldır
         if (onRemoveFormMessage && setMessages && id) {
             onRemoveFormMessage(setMessages, id);
         }
-
-        // Sonra randevu sonuç mesajını ekle
-        const sonucComponent = (
+        // Sonra randevu sonuç mesajını oluştur ve state'e ata
+        setSonucComponent(
             <RandevuSonuc
                 id={Date.now()}
                 hospital={selectedHospital}
                 doctor={selectedDoctor}
                 department={selectedDepartment}
                 date={selectedDate}
-                onRemoveMessage={(id) => onResult({ type: "remove", id })}
             />
         );
-
-        onResult(createComponentResponse(sonucComponent, Date.now()));
+        setShowResult(true);
+        setCurrentStep(5);
 
         setSelectedHospital("");
         setSelectedDoctor("");
         setSelectedDepartment("");
         setSelectedDate("");
-        setCurrentStep(1);
     };
 
     return (
@@ -89,7 +88,7 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
                         className="w-full mt-5 bg-[#303030] hover:bg-[#414141] text-white py-2 px-4 rounded-2xl cursor-pointer"
                         onClick={async () => {
                             if (!selectedDepartment) return;
-                             const response = await sendMessage([{ role: "assistant", content: `Bölüm: ${selectedDepartment}` }]).unwrap();
+                            const response = await sendMessage([{ role: "assistant", content: `Bölüm: ${selectedDepartment}` }]).unwrap();
                             console.log("✅ API cevabı:", response);
                             setCurrentStep(3);
                         }}
@@ -137,13 +136,20 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
                         className="w-full mt-5 bg-[#303030] hover:bg-[#414141] text-white py-2 px-4 rounded-2xl cursor-pointer"
                         onClick={async () => {
                             if (!selectedDate) return;
-                             const response = await sendMessage([{ role: "assistant", content: `Tarih: ${selectedDate}` }]).unwrap();
+                            const response = await sendMessage([{ role: "assistant", content: `Tarih: ${selectedDate}` }]).unwrap();
                             console.log("✅ API cevabı:", response);
                             handleConfirm();
+                            { sonucComponent }
                         }}
                     >
                         Devam Et
                     </button>
+                </div>
+            )}
+
+            {currentStep === 5 && showResult && (
+                <div>
+                    {sonucComponent}
                 </div>
             )}
         </div>

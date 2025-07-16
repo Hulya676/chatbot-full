@@ -14,6 +14,11 @@ import {
 } from '../utils/ButtonFunctions';
 import { MessageHandler } from '../utils/MessageHandler';
 import { useSendMessageMutation } from '../api/api';
+import NobetciEczane from '../components/NobetciEczane';
+import RandevuAl from '../components/RandevuAl';
+import SonucGoruntule from '../components/SonucGoruntule';
+import HastaneBilgisiAl from '../components/HastaneBilgisiAl';
+import RandevuSonuc from '../components/RandevuSonuc';
 
 
 const AIAsistan = () => {
@@ -23,7 +28,7 @@ const AIAsistan = () => {
   const showButtons = useSelector((state) => state.chat.showButtons);
   const dispatch = useDispatch();
   const [sendMessageApi] = useSendMessageMutation();
-const messageHandler = new MessageHandler(dispatch, (msg) => dispatch(addMessage(msg)));
+  const messageHandler = new MessageHandler(dispatch, (msg) => dispatch(addMessage(msg)));
   const inputRef = useRef(null);
 
   const handleInputChange = (e) => {
@@ -33,13 +38,21 @@ const messageHandler = new MessageHandler(dispatch, (msg) => dispatch(addMessage
       inputRef.current.style.height = inputRef.current.scrollHeight + 'px';
     }
   };
-const sendMessage = () => {
-  messageHandler.handleSendMessage(input, (val) => dispatch(setInput(val)), messages);
+  const sendMessage = () => {
+    messageHandler.handleSendMessage(input, (val) => dispatch(setInput(val)), messages);
   };
 
-const handleExampleClick = (content) => {
-  messageHandler.handleExampleClick(content, (val) => dispatch(setShowButtons(val)));
-};
+  const handleExampleClick = (content) => {
+    messageHandler.handleExampleClick(content, (val) => dispatch(setShowButtons(val)));
+  };
+
+  const componentMap = {
+    NobetciEczane,
+    RandevuAl,
+    SonucGoruntule,
+    HastaneBilgisiAl,
+    RandevuSonuc,
+  };
 
 
   return (
@@ -61,13 +74,18 @@ const handleExampleClick = (content) => {
                 ? "ml-auto bg-[#241f4e] text-white rounded-l-3xl rounded-tr-3xl"
                 : "mr-auto bg-white text-black rounded-r-3xl rounded-tl-3xl"}`}>
 
-              {msg.component
-                ? React.cloneElement(msg.component, {
-                    onResult: () => {},
+              {msg.componentType
+                ? React.createElement(
+                  componentMap[msg.componentType],
+                  {
+                    ...msg.componentProps,
+                    // Fonksiyonları burada ekle
+                    onResult: () => { },
                     onRemoveMessage: (id) => removeRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
                     onUpdateMessage: (id) => updateRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
                     onConfirmMessage: (id) => confirmRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
-                  })
+                  }
+                )
                 : <div className="pb-2">{msg.content}</div>}
 
               {msg.timestamp && (

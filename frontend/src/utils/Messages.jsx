@@ -14,9 +14,10 @@ export const createTextResponse = (content) => ({
   timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 });
 
-export const createComponentResponse = (component, id = Date.now()) => ({
+export const createComponentResponse = (componentType, componentProps = {}, id = Date.now()) => ({
   role: "assistant",
-  component,
+  componentType,
+  componentProps,
   timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   id,
 });
