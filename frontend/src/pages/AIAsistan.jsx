@@ -80,7 +80,7 @@ const AIAsistan = () => {
                   {
                     ...msg.componentProps,
                     // Fonksiyonları burada ekle
-                    onResult: () => { },
+                    onResult: () => { },  // genellikle bir işlemin tamamlandığını üst bileşene bildirmek için çağrılır. Örneğin, bir form doldurulup "Onayla"ya basıldığında, üst bileşene "işlem bitti" demek için kullanılabilir.
                     onRemoveMessage: (id) => removeRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
                     onUpdateMessage: (id) => updateRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
                     onConfirmMessage: (id) => confirmRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),

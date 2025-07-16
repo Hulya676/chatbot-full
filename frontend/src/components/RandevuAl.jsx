@@ -2,6 +2,11 @@ import React, { useState } from "react";
 import { createComponentResponse } from "../utils/Messages";
 import RandevuSonuc from "./RandevuSonuc";
 import { useSendMessageMutation } from "../api/api";
+import {
+  removeRandevuSonucMessage,
+  updateRandevuSonucMessage,
+  confirmRandevuSonucMessage
+} from '../utils/ButtonFunctions';
 
 function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
     const hospitals = ["Devlet Hastanesi", "Şehir Hastanesi", "Özel Hastane", "Ankara Şehir Hastanesi"];
@@ -36,6 +41,9 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
                 doctor={selectedDoctor}
                 department={selectedDepartment}
                 date={selectedDate}
+                onRemoveMessage={(id) => removeRandevuSonucMessage(setMessages, id)}
+                onUpdateMessage={(id) => updateRandevuSonucMessage(setMessages, id)}
+                onConfirmMessage={(id) => confirmRandevuSonucMessage(setMessages, id)}
             />
         );
         setShowResult(true);

@@ -15,12 +15,15 @@ export const createTextResponse = (content) => ({
 });
 
 export const createComponentResponse = (componentType, componentProps = {}, id = Date.now()) => ({
-  role: "assistant",
-  componentType,
-  componentProps,
-  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   id,
+  role: "assistant",
+  sender: "assistant", // Eğer diğer mesajlarda da varsa
+  content: "",         // Çünkü içerik bileşen ile gösterilecek
+  componentType,       // Örn: "RandevuSonuc"
+  componentProps,      // Örn: { hospital: ..., date: ... }
+  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 });
+
 
 export const createRandevuCardMessage = ({ hospital, doctor, department, date }) =>
   createComponentResponse(
