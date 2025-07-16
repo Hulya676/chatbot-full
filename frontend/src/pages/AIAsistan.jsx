@@ -14,7 +14,7 @@ import {
 } from '../utils/ButtonFunctions';
 import { MessageHandler } from '../utils/MessageHandler';
 import { useSendMessageMutation } from '../api/api';
-
+import ComponentMapper from '../utils/ComponentMapper';
 
 const AIAsistan = () => {
   const messages = useSelector((state) => state.chat.messages);
@@ -25,7 +25,6 @@ const AIAsistan = () => {
   const [sendMessageApi] = useSendMessageMutation();
 const messageHandler = new MessageHandler(dispatch, (msg) => dispatch(addMessage(msg)));
   const inputRef = useRef(null);
-
   const handleInputChange = (e) => {
     dispatch(setInput(e.target.value));
     if (inputRef.current) {
@@ -61,14 +60,9 @@ const handleExampleClick = (content) => {
                 ? "ml-auto bg-[#241f4e] text-white rounded-l-3xl rounded-tr-3xl"
                 : "mr-auto bg-white text-black rounded-r-3xl rounded-tl-3xl"}`}>
 
-              {msg.component
-                ? React.cloneElement(msg.component, {
-                    onResult: () => {},
-                    onRemoveMessage: (id) => removeRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
-                    onUpdateMessage: (id) => updateRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
-                    onConfirmMessage: (id) => confirmRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
-                  })
-                : <div className="pb-2">{msg.content}</div>}
+              {msg.type
+              ? <ComponentMapper type={msg.type} id={msg.id} {...msg.data} />
+              : <div className="pb-2">{msg.content}</div>}
 
               {msg.timestamp && (
                 <div className={`text-xs absolute bottom-2 opacity-70 ${msg.role === "user" ? "text-white right-3" : "text-black left-3"}`}>

@@ -16,44 +16,18 @@ export const COMPONENT_TYPES = { //gönderilen mesaja göre components
 
 export const createComponentByType = (type, props = {}) => {
     const id = Date.now();
-    
-    switch (type) {
-        case COMPONENT_TYPES.RANDEVU_AL:
-            return {
-                component: createComponentResponse(
-                    <RandevuAl
-                        id={id}
-                        onRemoveFormMessage={removeRandevuFormMessage}
-                        setMessages={props.setMessages}
-                        onResult={props.onResult}
-                    />,
-                    id
-                ),
-                id
-            };
-        case COMPONENT_TYPES.SONUC_GORUNTULE:
-            return {
-                component: createComponentResponse(<SonucGoruntule />),
-                id
-            };
-        case COMPONENT_TYPES.HASTANE_BILGISI:
-            return {
-                component: createComponentResponse(<HastaneBilgisiAl />),
-                id
-            };
-        case COMPONENT_TYPES.NOBETCI_ECZANE:
-            return {
-                component: createComponentResponse(<NobetciEczane />),
-                id
-            };
-        default:
-            return null;
-    }
+    return { type, id, ...props };
 };
 
+const componentMap = {
+  'randevu al': RandevuAl,
+  'sonuç görüntüle': SonucGoruntule,
+  'hastane bilgisi al': HastaneBilgisiAl,
+  'nöbetçi eczane': NobetciEczane,
+};
 export const getComponentTypeFromContent = (content) => {
     const lowerContent = content.toLowerCase();
-    
+
     if (lowerContent.includes(COMPONENT_TYPES.RANDEVU_AL)) {
         return COMPONENT_TYPES.RANDEVU_AL;
     } else if (lowerContent.includes(COMPONENT_TYPES.SONUC_GORUNTULE)) {
@@ -63,6 +37,12 @@ export const getComponentTypeFromContent = (content) => {
     } else if (lowerContent.includes(COMPONENT_TYPES.NOBETCI_ECZANE)) {
         return COMPONENT_TYPES.NOBETCI_ECZANE;
     }
-    
+
     return null;
 };
+
+export default function ComponentMapper({ type, ...props }) {
+  const Component = componentMap[type];
+  if (!Component) return null;
+  return <Component {...props} />;
+}

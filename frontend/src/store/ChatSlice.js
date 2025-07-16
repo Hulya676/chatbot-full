@@ -1,4 +1,5 @@
- // Mesajlar, input, loading ve buton state'leri burada tutulur ve güncellenir. Mesaj ekleme, input değiştirme, loading durumunu değiştirme gibi işlemler için reducer'lar içerir.
+ // Mesajlar, input, loading ve buton state'leri burada tutulur ve güncellenir.
+ //  Mesaj ekleme, input değiştirme, loading durumunu değiştirme gibi işlemler için reducer'lar içerir.
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
