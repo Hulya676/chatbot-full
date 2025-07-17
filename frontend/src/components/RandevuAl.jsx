@@ -7,7 +7,8 @@ import {
   updateRandevuSonucMessage,
   confirmRandevuSonucMessage
 } from '../utils/ButtonFunctions';
-
+//Formun kendi içindeki geçici veriler: Kullanıcı formda seçim yaptıkça değişen, sadece bu formun işleyişi için gerekli olan veriler (seçili hastane, doktor, bölüm, tarih, adım vs.) bunlar. Yani, başka bir bileşenin veya ekranın bu verilere ihtiyacı yok.
+//Redux ile global state ise, genellikle uygulamanın farklı yerlerinde erişilmesi gereken veya birden fazla bileşenin paylaşacağı veriler için kullanılır (ör: mesajlar, kullanıcı bilgisi, tema vs.).
 function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
     const hospitals = ["Devlet Hastanesi", "Şehir Hastanesi", "Özel Hastane", "Ankara Şehir Hastanesi"];
     const doctors = ["Dr. Ali Yılmaz", "Dr. Ayşe Demir", "Dr. Mehmet Kaya"];
@@ -140,6 +141,8 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
                         onChange={(e) => setSelectedDate(e.target.value)}
                         className="w-full border border-gray-300 rounded px-3 py-2"
                     />
+
+                    {/* kullanıcı formu doldurup onayladığında, sonucu Redux'taki mesajlara ekliyor*/ }
                     <button
                         className="w-full mt-5 bg-[#303030] hover:bg-[#414141] text-white py-2 px-4 rounded-2xl cursor-pointer"
                         onClick={async () => {
