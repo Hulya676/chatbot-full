@@ -7,6 +7,7 @@
 import { createUserMessage, createTextResponse } from './Messages';
 import { createComponentByType, getComponentTypeFromContent } from './ComponentMapper';
 import { setMessages, setLoading, addMessage } from '../store/ChatSlice';
+import { useSendMessageMutation } from '../api/api';
 
 //this = MessageHandler nesnesinin kendisi ve constructor'da atanan React state fonksiyonlarına erişim sağlar.
 //await kod gerçekleşene kadarbekler.
@@ -14,29 +15,39 @@ import { setMessages, setLoading, addMessage } from '../store/ChatSlice';
 //MessageHandler sınıfı, tüm mesaj işleme mantığını bir araya getiren bir yöneticidir (controller). Özellikle mesaj gönderme, örnek mesaj tıklama, AI'den yanıt alma gibi işlevleri tek bir merkezden kontrol etmek için kullanılır.
 // MessageHandler.js
 //Bu action’ı örn: addMessage dispatch ile Redux store’a gönderir.Redux, ilgili reducer’ı çalıştırır ve state’i günceller.Uygulamanın ilgili yerleri otomatik olarak güncellenir.
+
 export class MessageHandler {
   constructor(dispatch, handleMessageUpdate) {
     this.dispatch = dispatch;
     this.handleMessageUpdate = handleMessageUpdate;
   }
 
-  async handleExampleClick(content, setShowButtons, messages) {
+  async handleExampleClick(content, setShowButtons, messages, sendMessageApi) {
     setShowButtons(false);
-    await this.processMessage(content,messages);
+    const userMessage = createUserMessage(content);
+    this.dispatch(addMessage(userMessage));
+    await this.processMessage(content, messages, userMessage);
+    try {
+      const aiReply = await sendMessageApi([userMessage]).unwrap();
+      console.log([userMessage])
+      console.log(aiReply)
+    } catch (error) {
+      console.error('AI mesajı gönderilirken hata:', error);
+    }
   }
 
-  async handleSendMessage(input, clearInput, messages) {
+  async handleSendMessage(input, clearInput, messages, sendMessageApi) {
     if (!input.trim()) return;
     const userMessage = createUserMessage(input);
     this.dispatch(addMessage(userMessage));
     clearInput('');
     this.dispatch(setLoading(true));
-    await this.processMessage(input, [...messages, userMessage], userMessage);
+    await this.processMessage(input, [...messages, userMessage], userMessage, sendMessageApi);
   }
-//Eğer içerik özel bir bileşen gerektiriyorsa (ör: "randevu al", "sonuç görüntüle" gibi), ilgili React componentini oluşturur ve mesaj listesine ekler.
-//Eğer özel bir bileşen gerekmiyorsa, AI'den cevap almak için API'ye istek atar ve gelen cevabı mesaj olarak ekler.
-//Her durumda, yükleniyor (loading) durumunu yönetir.
-async processMessage(content, messages = [], userMessage = null) {
+  //Eğer içerik özel bir bileşen gerektiriyorsa (ör: "randevu al", "sonuç görüntüle" gibi), ilgili React componentini oluşturur ve mesaj listesine ekler.
+  //Eğer özel bir bileşen gerekmiyorsa, AI'den cevap almak için API'ye istek atar ve gelen cevabı mesaj olarak ekler.
+  //Her durumda, yükleniyor (loading) durumunu yönetir.
+  async processMessage(content, messages = [], userMessage = null, sendMessageApi) {
     const componentType = getComponentTypeFromContent(content);
 
     if (componentType) {
@@ -53,7 +64,9 @@ async processMessage(content, messages = [], userMessage = null) {
 
     if (userMessage) {
       try {
-        const aiReply = await sendAIMessage(messages);
+        const aiReply = await sendMessageApi([userMessage]).unwrap();
+        console.log('APIye giden mesaj:', [userMessage]);
+        console.log('API cevabı:', aiReply);
         const assistantMessage = createTextResponse(aiReply);
         this.dispatch(addMessage(assistantMessage));
       } catch (error) {

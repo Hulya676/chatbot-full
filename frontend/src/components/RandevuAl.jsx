@@ -23,9 +23,16 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
     const [selectedDepartment, setSelectedDepartment] = useState("");
 
     const [doctorId, setDoctorId] = useState(null);
-    const { data: doctors } = useGetDoctorsByBranchIdQuery(selectedDepartment, {
+    const { data: doctors, isSuccess } = useGetDoctorsByBranchIdQuery(selectedDepartment, {
         skip: !selectedDepartment,
     });
+
+    useEffect(() => {
+        if (isSuccess && doctors) {
+            console.log("✅ Doktorlar geldi:", doctors);
+        }
+    }, [isSuccess, doctors]);
+
 
     useEffect(() => {
         if (selectedDoctor) {
@@ -47,6 +54,14 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
 
     const today = new Date();
     const formatDate = (date) => date.toISOString().split("T")[0];
+
+    const dateObj = new Date(selectedDate);
+    const formattedDate = dateObj.toLocaleDateString('tr-TR', { //bir Date nesnesini yerel dil ve format kurallarına göre biçimlendirir
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+        //tarih formatının hangi şekilde gösterileceğini belirler
+    });
 
     const selectedHospitalObj = hospitals?.find(h => h.id.toString() === selectedHospital);
     const selectedDepartmentObj = branches?.find(b => b.id.toString() === selectedDepartment);
@@ -94,10 +109,11 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
                         ))}
                     </select>
                     <button
-                        className="w-full mt-5 bg-[#303030] hover:bg-[#414141] text-white py-2 px-4 rounded-2xl cursor-pointer"
+                        className="w-full mt-5 bg-[#303030]  hover:bg-[#414141] text-white py-2 px-4 rounded-2xl cursor-pointer"
                         onClick={async () => {
                             if (!selectedHospital) return;
-                            const response = await sendMessage([{ role: "assistant", content: `Hastane: ${selectedHospital}` }]).unwrap();
+                            const response = await sendMessage([{ role: "assistant", content: `Hastane: ${selectedHospitalObj?.name}}` }]).unwrap();
+                            console.log(`${selectedHospitalObj?.name}`)
                             console.log("✅ API cevabı:", response);
                             setCurrentStep(2);
                         }}
@@ -189,8 +205,9 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
                         onClick={async () => {
                             if (!selectedDate || !selectedTime) return;
                             const response = await sendMessage([
-                                { role: "assistant", content: `Tarih: ${selectedDate} - Saat: ${selectedTime}` },
+                                { role: "assistant", content: `Tarih: ${formattedDate} - Saat: ${selectedTime}` },
                             ]).unwrap();
+                            console.log(`Tarih: ${selectedDate} - Saat: ${selectedTime}`)
                             console.log("✅ API cevabı:", response);
                             handleConfirm();
                         }}

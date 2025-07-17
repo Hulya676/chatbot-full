@@ -39,12 +39,13 @@ const AIAsistan = () => {
     }
   };
   const sendMessage = () => {
-    messageHandler.handleSendMessage(input, (val) => dispatch(setInput(val)), messages);
+    messageHandler.handleSendMessage(input, (val) => dispatch(setInput(val)), messages, sendMessageApi);
   };
 
   const handleExampleClick = (content) => {
-    messageHandler.handleExampleClick(content, (val) => dispatch(setShowButtons(val)));
+    messageHandler.handleExampleClick(content, (val) => dispatch(setShowButtons(val)), messages, sendMessageApi)
   };
+
 
   const componentMap = {
     NobetciEczane,

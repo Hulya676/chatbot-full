@@ -6,6 +6,8 @@ export const useChatState = () => {
     const [messages, setMessages] = useState([
         { role: "assistant", content: "Merhaba! Size nasıl yardımcı olabilirim?" }
     ]);
+
+    usememo()
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [showButtons, setShowButtons] = useState(true);
