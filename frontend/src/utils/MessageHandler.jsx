@@ -50,17 +50,16 @@ export class MessageHandler {
   async processMessage(content, messages = [], userMessage = null) {
     const componentType = getComponentTypeFromContent(content);
 
-    if (componentType) {
-      const result = createComponentByType(componentType, {
-        dispatch: this.dispatch,
-        onResult: this.handleMessageUpdate,
-      });
-      if (result) {
-        this.dispatch(addMessage(result.component));
-        this.dispatch(setLoading(false));
-        return;
-      }
-    }
+   if (componentType) {
+  const result = createComponentByType(componentType, {
+    // Gerekirse ek veri
+  });
+  if (result) {
+    this.dispatch(addMessage(result)); // SADECE DÜZ VERİ!
+    this.dispatch(setLoading(false));
+    return;
+  }
+}
 
     if (userMessage) {
       try {
