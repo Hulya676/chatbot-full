@@ -1,22 +1,48 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createComponentResponse } from "../utils/Messages";
 import RandevuSonuc from "./RandevuSonuc";
-import { useSendMessageMutation } from "../api/api";
+import { useGetBranchesByHospitalIdQuery, useGetHospitalsQuery, useSendMessageMutation, useGetDoctorsByBranchIdQuery, useGetTimesByDoctorIdQuery } from "../api/api";
 import {
-  removeRandevuSonucMessage,
-  updateRandevuSonucMessage,
-  confirmRandevuSonucMessage
+    removeRandevuSonucMessage,
+    updateRandevuSonucMessage,
+    confirmRandevuSonucMessage
 } from '../utils/ButtonFunctions';
 
 function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
-    const hospitals = ["Devlet Hastanesi", "Şehir Hastanesi", "Özel Hastane", "Ankara Şehir Hastanesi"];
-    const doctors = ["Dr. Ali Yılmaz", "Dr. Ayşe Demir", "Dr. Mehmet Kaya"];
-    const departments = ["Kardiyoloji", "Dahiliye", "Ortopedi"];
+    const { data: hospitals, isLoading } = useGetHospitalsQuery();
+    const [hospitalId, setHospitalId] = useState(null);
+    const { data: branches } = useGetBranchesByHospitalIdQuery(hospitalId, {
+        skip: !hospitalId, // hospitalId boşsa sorgu atmasın
+    });
 
     const [selectedHospital, setSelectedHospital] = useState("");
+
+    useEffect(() => {
+        if (selectedHospital) {
+            setHospitalId(selectedHospital);
+        }
+    }, [selectedHospital]);
+
     const [selectedDoctor, setSelectedDoctor] = useState("");
     const [selectedDepartment, setSelectedDepartment] = useState("");
+
+    const [doctorId, setDoctorId] = useState(null);
+    const { data: doctors } = useGetDoctorsByBranchIdQuery(selectedDepartment, {
+        skip: !selectedDepartment,
+    });
+
+    useEffect(() => {
+        if (selectedDoctor) {
+            setDoctorId(selectedDoctor);
+        }
+    }, [selectedDoctor]);
+
     const [selectedDate, setSelectedDate] = useState("");
+    const [selectedTime, setSelectedTime] = useState("");
+
+    const { data: doctorTimes } = useGetTimesByDoctorIdQuery(selectedDoctor, {
+        skip: !selectedDoctor,
+    });
 
     const [currentStep, setCurrentStep] = useState(1);
     const [sendMessage] = useSendMessageMutation();
@@ -26,6 +52,9 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
     const today = new Date();
     const formatDate = (date) => date.toISOString().split("T")[0];
 
+    const selectedHospitalObj = hospitals?.find(h => h.id.toString() === selectedHospital);
+    const selectedDepartmentObj = branches?.find(b => b.id.toString() === selectedDepartment);
+    const selectedDoctorObj = doctors?.find(d => d.id.toString() === selectedDoctor);
 
     const handleConfirm = () => {
 
@@ -37,10 +66,11 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
         setSonucComponent(
             <RandevuSonuc
                 id={Date.now()}
-                hospital={selectedHospital}
-                doctor={selectedDoctor}
-                department={selectedDepartment}
-                date={selectedDate}
+                hospital={selectedHospitalObj?.name || "Bilinmiyor"}
+                doctor={selectedDoctorObj?.name || "Bilinmiyor"}
+                department={selectedDepartmentObj?.name || "Bilinmiyor"}
+                date={`${selectedDate}`}
+                time={`${selectedTime}`}
                 onRemoveMessage={(id) => removeRandevuSonucMessage(setMessages, id)}
                 onUpdateMessage={(id) => updateRandevuSonucMessage(setMessages, id)}
                 onConfirmMessage={(id) => confirmRandevuSonucMessage(setMessages, id)}
@@ -64,8 +94,10 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
                     <label className="block mb-1">Hastane</label>
                     <select className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value={selectedHospital} onChange={(e) => setSelectedHospital(e.target.value)}>
                         <option value="">Seçiniz</option>
-                        {hospitals.map((item, i) => (
-                            <option key={i} value={item}>{item}</option>
+                        {hospitals?.map(hospital => (
+                            <option key={hospital.id} value={hospital.id}>
+                                {hospital.name}
+                            </option>
                         ))}
                     </select>
                     <button
@@ -88,8 +120,10 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
                     <label className="block mb-1">Bölüm</label>
                     <select className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value={selectedDepartment} onChange={(e) => setSelectedDepartment(e.target.value)}>
                         <option value="">Seçiniz</option>
-                        {departments.map((item, i) => (
-                            <option key={i} value={item}>{item}</option>
+                        {branches?.map(branch => (
+                            <option key={branch.id} value={branch.id}>
+                                {branch.name}
+                            </option>
                         ))}
                     </select>
                     <button
@@ -111,8 +145,10 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
                     <label className="block mb-1">Doktor</label>
                     <select className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value={selectedDoctor} onChange={(e) => setSelectedDoctor(e.target.value)}>
                         <option value="">Seçiniz</option>
-                        {doctors.map((item, i) => (
-                            <option key={i} value={item}>{item}</option>
+                        {doctors?.map(doctor => (
+                            <option key={doctor.id} value={doctor.id}>
+                                {doctor.name}
+                            </option>
                         ))}
                     </select>
                     <button
@@ -138,22 +174,39 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
                         value={selectedDate}
                         min={formatDate(today)}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className="w-full border border-gray-300 rounded px-3 py-2"
+                        className="w-full border border-gray-300 rounded px-3 py-2 mb-4"
                     />
+
+                    <label className="block mb-1">Saat</label>
+                    <select
+                        value={selectedTime}
+                        onChange={(e) => setSelectedTime(e.target.value)}
+                        className="w-full border border-gray-300 rounded px-3 py-2"
+                    >
+                        <option value="">Saat seçiniz</option>
+                        {doctorTimes?.available?.map((time, i) => (
+                            <option key={i} value={time}>
+                                {time}
+                            </option>
+                        ))}
+                    </select>
+
                     <button
                         className="w-full mt-5 bg-[#303030] hover:bg-[#414141] text-white py-2 px-4 rounded-2xl cursor-pointer"
                         onClick={async () => {
-                            if (!selectedDate) return;
-                            const response = await sendMessage([{ role: "assistant", content: `Tarih: ${selectedDate}` }]).unwrap();
+                            if (!selectedDate || !selectedTime) return;
+                            const response = await sendMessage([
+                                { role: "assistant", content: `Tarih: ${selectedDate} - Saat: ${selectedTime}` },
+                            ]).unwrap();
                             console.log("✅ API cevabı:", response);
                             handleConfirm();
-                            { sonucComponent }
                         }}
                     >
                         Devam Et
                     </button>
                 </div>
             )}
+
 
             {currentStep === 5 && showResult && (
                 <div>
@@ -165,3 +218,6 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
 }
 
 export default RandevuAl;
+
+
+
