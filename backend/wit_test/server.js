@@ -1,16 +1,17 @@
+// backend/wit_test/server.js
 // server.js – ES-modules
 import express from 'express';
 import bodyParser from 'body-parser';
-import fetch from 'node-fetch';
-import 'dotenv/config.js';
+import fetch from 'node-fetch'; // fetch hala diğer yerlerde kullanılıyor olabilir, çıkarmayın.
+import 'dotenv/config.js'; // .env dosyasını yükler
 
 // ROUTES
 import appointmentRoutes from './routes/appointment.routes.js';
 import hospitalRoutes from './routes/hospital.routes.js';
-import doctorRoutes from './routes/doctor.routes.js'; // doctorRoutes'u hala import ediyoruz
+import doctorRoutes from './routes/doctor.routes.js'; // doctor.routes.js'den gelen router
 
-// Chat ve LLM
-import { askWit, askGemini, generateResponse } from './witTest.js';
+// Chat ve LLM - Sadece askGemini ve generateResponse import edildi
+import { askGemini, generateResponse } from './witTest.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -22,16 +23,12 @@ app.use(bodyParser.json());
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/hospitals', hospitalRoutes);
 
-// Branşa göre doktorları getiren rota için: /api/branches/:branchId/doctors
-// doctorRoutes içinde router.get('/:branchId/doctors', getDoctors); olmalı
-app.use('/api/branches', doctorRoutes);
+// DoctorRoutes hem /api/doctors hem de /api/branches prefix'leri altında çalışacak
+app.use('/api/doctors', doctorRoutes);
+app.use('/api/branches', doctorRoutes); // BU SATIRIN VARLIĞINDAN EMİN OLUN!
 
-// Doktorun müsait zaman dilimlerini getiren rota için: /api/doctors/:doctorId/times
-// doctorRoutes içinde router.get('/:doctorId/times', getDoctorSlots); olmalı
-app.use('/api/doctors', doctorRoutes); // BURADAKİ DEĞİŞİKLİK: doctorRoutes'u bir daha bağlıyoruz
-
-// ✅ CHATBOT (Wit.ai + Gemini + OpenAI)
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || null;
+// ✅ CHATBOT (Sadece Gemini ve opsiyonel OpenAI)
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || null; // OpenAI hala opsiyonel olarak kalabilir
 
 async function askOpenAI(prompt, systemCtx = '') {
   if (!OPENAI_API_KEY) throw new Error('NO_OPENAI_KEY');
@@ -58,11 +55,10 @@ async function askOpenAI(prompt, systemCtx = '') {
 
 app.post('/chat', async (req, res) => {
   const userMessage = req.body.message;
-  const providerHdr = (req.headers['x-ai-provider'] || '').toLowerCase();
+  const providerHdr = (req.headers['x-ai-provider'] || '').toLowerCase(); // ChatGPT seçeneği hala aktif
   if (!userMessage) return res.status(400).json({ error: 'message alanı zorunludur' });
 
   try {
-    const witData = await askWit(userMessage);
     const llmChooser = async (prompt, ctx) => {
       if (providerHdr === 'chatgpt') {
         try {
@@ -75,7 +71,7 @@ app.post('/chat', async (req, res) => {
       return await askGemini(prompt, ctx);
     };
 
-    const botResponse = await generateResponse(witData, userMessage, llmChooser);
+    const botResponse = await generateResponse(userMessage, llmChooser);
     res.json({ reply: botResponse });
   } catch (err) {
     console.error(err);

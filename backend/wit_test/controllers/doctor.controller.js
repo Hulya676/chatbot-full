@@ -1,5 +1,5 @@
-// controllers/doctor.controller.js
-import { getDoctorsByBranchId, getAllDoctors as getAllDoctorsFromRepo } from '../repositories/doctor.repository.js'; // getAllDoctors'ı import edin
+// backend/wit_test/controllers/doctor.controller.js
+import { getDoctorsByBranchId, getAllDoctors as getAllDoctorsFromRepo } from '../repositories/doctor.repository.js'; // repositories'den fonksiyonları import edin
 
 // Branşa göre doktorları getirme
 export async function getDoctors(req, res) {
@@ -19,7 +19,7 @@ export async function getDoctors(req, res) {
   }
 }
 
-// TÜM DOKTORLARI GETİRME - YENİ FONKSİYON
+// TÜM DOKTORLARI GETİRME
 export async function getAllDoctors(req, res) {
   try {
     const doctors = await getAllDoctorsFromRepo();
