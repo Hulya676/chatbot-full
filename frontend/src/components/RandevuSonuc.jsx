@@ -1,6 +1,6 @@
 import React from "react";
 
-const RandevuSonuc = ({ hospital, doctor, department, date, onRemoveMessage, id, onUpdateMessage, onConfirmMessage, hideButtons }) => {
+const RandevuSonuc = ({ hospital, doctor, department, date, onRemoveMessage, id, onUpdateMessage, onConfirmMessage, hideButtons, time }) => {
 
     const dateObj = new Date(date);
     const formattedDate = dateObj.toLocaleDateString('tr-TR', { //bir Date nesnesini yerel dil ve format kurallarına göre biçimlendirir
@@ -24,6 +24,7 @@ const RandevuSonuc = ({ hospital, doctor, department, date, onRemoveMessage, id,
                     <p className="text-[18px]"><strong>Doktor:</strong> {doctor}</p>
                     <p className="text-[18px]"><strong>Bölüm:</strong> {department}</p>
                     <p className="text-[18px]"><strong>Tarih:</strong> {formattedDate}</p>
+                    <p className="text-[18px]"><strong>Saat:</strong> {time}</p>
                 </div>
             </div>
 
