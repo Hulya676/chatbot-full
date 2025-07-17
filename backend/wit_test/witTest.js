@@ -1,24 +1,25 @@
 /******************************************************************
  * witTest.js  –  Wit.ai + Gemini entegrasyonu
  * ---------------------------------------------------------------
- *  • WIT_TOKEN  ve GEMINI_API_KEY  .env içinde tanımlı olmalı
- *  • Oturum bilgisi (hastane, bölüm, tarih) tutulur
- *  • generateResponse, dışarıdan verilen llmFn parametresiyle
- *    ChatGPT / Gemini seçiminde esnek çalışır
+ * • WIT_TOKEN  ve GEMINI_API_KEY  .env içinde tanımlı olmalı
+ * • Oturum bilgisi (hastane, bölüm, tarih) tutulur
+ * • generateResponse, dışarıdan verilen llmFn parametresiyle
+ * ChatGPT / Gemini seçiminde esnek çalışır
  ******************************************************************/
 
 import fetch from 'node-fetch';
-import 'dotenv/config.js';
+// import 'dotenv/config.js'; // BU SATIRI KALDIRIN! SADECE server.js'de yüklenecek.
 
-const WIT_TOKEN       = process.env.WIT_TOKEN;
-const GEMINI_API_KEY  = process.env.GEMINI_API_KEY;
+const WIT_TOKEN      = process.env.WIT_TOKEN;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 if (!WIT_TOKEN || !GEMINI_API_KEY) {
+  // Bu hata fırlatma hala kalmalı, çünkü server.js yüklemezse sorun var demektir.
   throw new Error('WIT_TOKEN veya GEMINI_API_KEY tanımlı değil (.env)!');
 }
 
 /* -------------------------------------------------------------- */
-/* 1)  Oturum nesnesi                                              */
+/* 1)  Oturum nesnesi                                             */
 /* -------------------------------------------------------------- */
 const session = {
   hastane  : null,
@@ -45,7 +46,7 @@ export async function askWit(text) {
 }
 
 /* -------------------------------------------------------------- */
-/* 3)  Gemini – fallback LLM                                       */
+/* 3)  Gemini – fallback LLM                                      */
 /* -------------------------------------------------------------- */
 export async function askGemini(text, context = '') {
   const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -70,11 +71,11 @@ export async function askGemini(text, context = '') {
   }
 
   return data.candidates?.[0]?.content?.parts?.[0]?.text
-         || '🤖 Anlayamadım, lütfen farklı ifade edin.';
+           || '🤖 Anlayamadım, lütfen farklı ifade edin.';
 }
 
 /* -------------------------------------------------------------- */
-/* 4)  Yanıt üretimi                                               */
+/* 4)  Yanıt üretimi                                              */
 /* -------------------------------------------------------------- */
 export async function generateResponse(witData, userMessage, llmFn = null) {
   const text       = userMessage.toLowerCase();
@@ -114,7 +115,7 @@ export async function generateResponse(witData, userMessage, llmFn = null) {
       );
 
   if (inFlow) {
-    if (!session.hastane)  return 'Hangi hastane için randevu almak istiyorsunuz?';
+    if (!session.hastane)   return 'Hangi hastane için randevu almak istiyorsunuz?';
     if (!session.bolum)    return 'Hangi bölüm için randevu almak istiyorsunuz?';
     if (!session.datetime) return 'Hangi tarih ve saatte randevu almak istiyorsunuz?';
 

@@ -4,14 +4,33 @@ import bodyParser from 'body-parser';
 import fetch from 'node-fetch';
 import 'dotenv/config.js';
 
-// Chat ve LLM kullanımı (varsa)
+// ROUTES
+import appointmentRoutes from './routes/appointment.routes.js';
+import hospitalRoutes from './routes/hospital.routes.js';
+import doctorRoutes from './routes/doctor.routes.js'; // doctorRoutes'u hala import ediyoruz
+
+// Chat ve LLM
 import { askWit, askGemini, generateResponse } from './witTest.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Middleware
 app.use(bodyParser.json());
 
-// OpenAI GPT fallback
+// ROUTE MOUNTING
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/hospitals', hospitalRoutes);
+
+// Branşa göre doktorları getiren rota için: /api/branches/:branchId/doctors
+// doctorRoutes içinde router.get('/:branchId/doctors', getDoctors); olmalı
+app.use('/api/branches', doctorRoutes);
+
+// Doktorun müsait zaman dilimlerini getiren rota için: /api/doctors/:doctorId/times
+// doctorRoutes içinde router.get('/:doctorId/times', getDoctorSlots); olmalı
+app.use('/api/doctors', doctorRoutes); // BURADAKİ DEĞİŞİKLİK: doctorRoutes'u bir daha bağlıyoruz
+
+// ✅ CHATBOT (Wit.ai + Gemini + OpenAI)
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || null;
 
 async function askOpenAI(prompt, systemCtx = '') {
@@ -37,9 +56,6 @@ async function askOpenAI(prompt, systemCtx = '') {
   return data.choices?.[0]?.message?.content?.trim() || '🤖 ChatGPT’den anlamlı yanıt gelmedi.';
 }
 
-/***************************************************************
- *  POST /chat                                                 *
- ***************************************************************/
 app.post('/chat', async (req, res) => {
   const userMessage = req.body.message;
   const providerHdr = (req.headers['x-ai-provider'] || '').toLowerCase();
@@ -49,8 +65,9 @@ app.post('/chat', async (req, res) => {
     const witData = await askWit(userMessage);
     const llmChooser = async (prompt, ctx) => {
       if (providerHdr === 'chatgpt') {
-        try { return await askOpenAI(prompt, ctx); }
-        catch (e) {
+        try {
+          return await askOpenAI(prompt, ctx);
+        } catch (e) {
           if (e.message !== 'NO_OPENAI_KEY') throw e;
           console.warn('GPT istendi fakat OPENAI_API_KEY yok; Gemini kullanılıyor.');
         }
@@ -66,72 +83,7 @@ app.post('/chat', async (req, res) => {
   }
 });
 
-/***************************************************************
- *  YENİ: HAZIR RANDEVU API UÇ NOKTALARI (Frontend için)    *
- ***************************************************************/
-const data = {
-  hospitals: [
-    {
-      id: 1,
-      name: 'Istanbul Şehir Hastanesi',
-      branches: [
-        {
-          id: 11,
-          name: 'Kardiyoloji',
-          doctors: [
-            { id: 111, name: 'Dr. Ayşe Yılmaz', available: ['10:00', '14:00'] },
-            { id: 112, name: 'Dr. Can Demir', available: ['09:30', '13:00'] }
-          ]
-        },
-        {
-          id: 12,
-          name: 'Nöroloji',
-          doctors: [
-            { id: 121, name: 'Dr. Ahmet Keskin', available: ['11:00', '15:00'] }
-          ]
-        }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Ankara Eğitim Hastanesi',
-      branches: [
-        {
-          id: 21,
-          name: 'Ortopedi',
-          doctors: [
-            { id: 211, name: 'Dr. Zeynep Güler', available: ['09:00', '13:30'] }
-          ]
-        }
-      ]
-    }
-  ]
-};
-
-app.get('/api/hospitals', (req, res) => {
-  res.json(data.hospitals.map(({ id, name }) => ({ id, name })));
-});
-
-app.get('/api/hospitals/:id/branches', (req, res) => {
-  const hospital = data.hospitals.find(h => h.id === parseInt(req.params.id));
-  if (!hospital) return res.status(404).json({ error: 'Hastane bulunamadı' });
-  res.json(hospital.branches.map(({ id, name }) => ({ id, name })));
-});
-
-app.get('/api/branches/:id/doctors', (req, res) => {
-  const allBranches = data.hospitals.flatMap(h => h.branches);
-  const branch = allBranches.find(b => b.id === parseInt(req.params.id));
-  if (!branch) return res.status(404).json({ error: 'Branş bulunamadı' });
-  res.json(branch.doctors.map(({ id, name }) => ({ id, name })));
-});
-
-app.get('/api/doctors/:id/times', (req, res) => {
-  const allDoctors = data.hospitals.flatMap(h => h.branches.flatMap(b => b.doctors));
-  const doctor = allDoctors.find(d => d.id === parseInt(req.params.id));
-  if (!doctor) return res.status(404).json({ error: 'Doktor bulunamadı' });
-  res.json({ doctor: doctor.name, available: doctor.available });
-});
-
+// SERVER LISTEN
 app.listen(port, () => {
-  console.log(`🟢 API http://localhost:${port} üzerinde çalışıyor.`);
+  console.log(`🟢 API http://localhost:${port} üzerinden çalışıyor.`);
 });
