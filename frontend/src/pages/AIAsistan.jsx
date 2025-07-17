@@ -20,6 +20,7 @@ import SonucGoruntule from '../components/SonucGoruntule';
 import HastaneBilgisiAl from '../components/HastaneBilgisiAl';
 import RandevuSonuc from '../components/RandevuSonuc';
 
+
 const AIAsistan = () => {
   const messages = useSelector((state) => state.chat.messages);
   const input = useSelector((state) => state.chat.input);
@@ -52,6 +53,7 @@ const AIAsistan = () => {
     HastaneBilgisiAl,
     RandevuSonuc,
   };
+
 
   return (
     <div className='min-h-screen w-full bg-gradient-to-tr from-[#e0def4] via-[#a1bef1] to-[#e0def4]'>
