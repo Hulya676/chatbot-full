@@ -27,7 +27,7 @@ const AIAsistan = () => {
   const showButtons = useSelector((state) => state.chat.showButtons);
   const dispatch = useDispatch();
   const [sendMessageApi] = useSendMessageMutation();
-  const messageHandler = new MessageHandler(dispatch, (msg) => dispatch(addMessage(msg)));
+  const messageHandler = new MessageHandler(dispatch, (msg) => dispatch(addMessage(msg)),sendMessageApi);
   const inputRef = useRef(null);
 
   const handleInputChange = (e) => {

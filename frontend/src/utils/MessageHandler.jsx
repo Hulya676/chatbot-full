@@ -15,25 +15,26 @@ import { useSendMessageMutation } from '../api/api';
 //MessageHandler sınıfı, tüm mesaj işleme mantığını bir araya getiren bir yöneticidir (controller). Özellikle mesaj gönderme, örnek mesaj tıklama, AI'den yanıt alma gibi işlevleri tek bir merkezden kontrol etmek için kullanılır.
 // MessageHandler.js
 //Bu action’ı örn: addMessage dispatch ile Redux store’a gönderir.Redux, ilgili reducer’ı çalıştırır ve state’i günceller.Uygulamanın ilgili yerleri otomatik olarak güncellenir.
+
 export class MessageHandler {
-  constructor(dispatch, handleMessageUpdate) {
+  constructor(dispatch, handleMessageUpdate,sendMessageApi) {
     this.dispatch = dispatch;
     this.handleMessageUpdate = handleMessageUpdate;
+    this.sendMessageApi=sendMessageApi;
   }
 
-  async handleExampleClick(content, setShowButtons, messages) {
+  async handleExampleClick(content, setShowButtons, messages, sendMessageApi) {
     setShowButtons(false);
     const userMessage = createUserMessage(content);
     this.dispatch(addMessage(userMessage));
     await this.processMessage(content, messages, userMessage);
-
-      try {
-        const aiReply = useSendMessageMutation(content);
-        const assistantMessage = createTextResponse(aiReply);
-        this.dispatch(addMessage(assistantMessage));
-      } catch (error) {
-        console.error('AI mesajı gönderilirken hata:', error);
-      }
+    try {
+      const aiReply = await sendMessageApi(content).unwrap();
+      const assistantMessage = createTextResponse(aiReply);
+      this.dispatch(addMessage(assistantMessage));
+    } catch (error) {
+      console.error('AI mesajı gönderilirken hata:', error);
+    }
   }
 
   async handleSendMessage(input, clearInput, messages) {
@@ -50,16 +51,17 @@ export class MessageHandler {
   async processMessage(content, messages = [], userMessage = null) {
     const componentType = getComponentTypeFromContent(content);
 
-   if (componentType) {
-  const result = createComponentByType(componentType, {
-    // Gerekirse ek veri
-  });
-  if (result) {
-    this.dispatch(addMessage(result)); // SADECE DÜZ VERİ!
-    this.dispatch(setLoading(false));
-    return;
-  }
-}
+    if (componentType) {
+      const result = createComponentByType(componentType, {
+        dispatch: this.dispatch,
+        onResult: this.handleMessageUpdate,
+      });
+      if (result) {
+        this.dispatch(addMessage(result.component));
+        this.dispatch(setLoading(false));
+        return;
+      }
+    }
 
     if (userMessage) {
       try {

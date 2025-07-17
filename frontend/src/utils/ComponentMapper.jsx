@@ -16,7 +16,6 @@ export const COMPONENT_TYPES = { //gönderilen mesaja göre components
 
 export const createComponentByType = (type = {}) => {
     const id = Date.now();
-<<<<<<< HEAD
     
     switch (type) {
         case COMPONENT_TYPES.RANDEVU_AL:
@@ -48,20 +47,11 @@ export const createComponentByType = (type = {}) => {
         default:
             return null;
     }
-=======
-    return { type, id, ...props };
->>>>>>> hülya
 };
 
-const componentMap = {
-  'randevu al': RandevuAl,
-  'sonuç görüntüle': SonucGoruntule,
-  'hastane bilgisi al': HastaneBilgisiAl,
-  'nöbetçi eczane': NobetciEczane,
-};
 export const getComponentTypeFromContent = (content) => {
     const lowerContent = content.toLowerCase();
-
+    
     if (lowerContent.includes(COMPONENT_TYPES.RANDEVU_AL)) {
         return COMPONENT_TYPES.RANDEVU_AL;
     } else if (lowerContent.includes(COMPONENT_TYPES.SONUC_GORUNTULE)) {
@@ -71,12 +61,6 @@ export const getComponentTypeFromContent = (content) => {
     } else if (lowerContent.includes(COMPONENT_TYPES.NOBETCI_ECZANE)) {
         return COMPONENT_TYPES.NOBETCI_ECZANE;
     }
-
+    
     return null;
 };
-
-export default function ComponentMapper({ type, ...props }) {
-  const Component = componentMap[type];
-  if (!Component) return null;
-  return <Component {...props} />;
-}
