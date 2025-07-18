@@ -1,4 +1,6 @@
+// ButtonFunctions
 // Component işlemleri (güncelle, onayla, sil) + API ile iletişim içerir
+
 import { store } from '../store/store';
 import { setMessages } from '../store/ChatSlice';
 import { createComponentResponse } from './Messages';
@@ -32,101 +34,106 @@ export const removeRandevuFormMessage = (id) => {
 };
 
 // Randevu sonucunu iptal et ve metinle değiştir
-export const removeRandevuSonucMessage = () => {
+export const removeRandevuSonucMessage = () => { // id parametresini kaldırdık
   const state = store.getState();
-  const newMessage = {
-    role: "assistant",
-    content: "Randevu İptal Edildi!",
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  };
-  store.dispatch(setMessages([...state.chat.messages, newMessage]));
+  // RandevuSonuc tipindeki son mesajı bul ve onu iptal edildi olarak işaretle
+  const updatedMessages = state.chat.messages.map(msg => {
+    if (msg.componentType === "RandevuSonuc" && msg.id) { // id kontrolü eklendi
+      return {
+        ...msg,
+        componentType: null,
+        componentProps: null,
+        content: "Randevu İptal Edildi!"
+      };
+    }
+    return msg;
+  });
+  store.dispatch(setMessages(updatedMessages));
 };
 
+
 // Randevuyu güncelle ve yeni bir RandevuAl formu ekle
-export const updateRandevuSonucMessage = () => {
+export const updateRandevuSonucMessage = () => { // id parametresini kaldırdık
   const state = store.getState();
 
-  // Son randevuyu bul (tipi RandevuAl veya RandevuSonuc olan)
-  const lastRandevu = [...state.chat.messages]
-    .reverse()
-    .find(msg => msg.componentType === "RandevuAl" || msg.componentType === "RandevuSonuc");
+  // Son "RandevuSonuc" veya "RandevuAl" komponentini bul
+  const lastRandevuMessage = [...state.chat.messages].reverse().find(
+    msg => msg.componentType === "RandevuAl" || msg.componentType === "RandevuSonuc"
+  );
 
-  if (!lastRandevu || !lastRandevu.componentProps?.id) {
+  if (!lastRandevuMessage) {
     console.warn("Güncellenecek randevu bulunamadı.");
     return;
   }
 
-  const targetId = lastRandevu.componentProps.id;
-
-  // Mesajı güncelle
-  const updatedMessages = state.chat.messages.map(msg =>
-    msg.componentProps?.id === targetId
-      ? {
-          ...msg,
-          componentType: "RandevuSonuc",
-          componentProps: {
-            ...msg.componentProps,
-            hideButtons: true // örnek ekstra prop
-          },
-          content: null
-        }
-      : msg
-  );
-
-  // Yeni form mesajı
-  const newFormMessage = {
-    componentType: "RandevuAl",
-    componentProps: {
-      id: Date.now()
+  // Son randevu sonucunu içeren mesajı metne dönüştür
+  const updatedMessages = state.chat.messages.map(msg => {
+    if (msg.id === lastRandevuMessage.id) {
+      return {
+        ...msg,
+        componentType: null,
+        componentProps: null,
+        content: "Randevu Güncelleniyor..."
+      };
     }
-  };
+    return msg;
+  });
+
+  // Yeni RandevuAl formunu oluştur
+  const newFormMessage = createComponentResponse("RandevuAl", {
+    id: Date.now()
+  });
 
   store.dispatch(setMessages([...updatedMessages, newFormMessage]));
 };
 
 
-
 // Randevuyu onayla ve bileşeni tekrar ama props olarak kaydet
-// Randevuyu onayla ve bileşeni tekrar ama props olarak kaydet
-export const confirmRandevuSonucMessage = () => {
+export const confirmRandevuSonucMessage = async () => {
   const state = store.getState();
 
-  // Son randevuya ait bilgileri bul (örnek: en son RandevuAl veya RandevuSonuc componentType'lı mesaj)
-const lastRandevuWithIndex = [...state.chat.messages]
-  .map((msg, idx) => ({ msg, idx }))
-  .reverse()
-  .find(obj => obj.msg.componentType === "RandevuAl" || obj.msg.componentType === "RandevuSonuc");
+  // Son RandevuAl veya RandevuSonuc komponentini bul ve bilgilerini al
+  const lastRandevuMessage = [...state.chat.messages].reverse().find(
+    msg => msg.componentType === "RandevuAl" || msg.componentType === "RandevuSonuc"
+  );
 
-if (!lastRandevuWithIndex) {
-  const newMessage = {
-    role: "assistant",
-    content: "Randevu Onaylandı!",
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  };
-  store.dispatch(setMessages([...state.chat.messages, newMessage]));
-  return;
-}
-
-const filteredMessages = state.chat.messages.filter((_, idx) => idx !== lastRandevuWithIndex.idx);
-
-const randevuCard = createComponentResponse(
-  "RandevuSonuc",
-  {
-    hospital: lastRandevuWithIndex.msg.componentProps?.hospital || "",
-    doctor: lastRandevuWithIndex.msg.componentProps?.doctor || "",
-    department: lastRandevuWithIndex.msg.componentProps?.department || "",
-    date: lastRandevuWithIndex.msg.componentProps?.date || "",
-    hideButtons: true
+  if (!lastRandevuMessage) {
+    const newMessage = {
+      role: "assistant",
+      content: "Randevu Onaylandı!",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    store.dispatch(setMessages([...state.chat.messages, newMessage]));
+    return;
   }
-);
 
-store.dispatch(setMessages([
-  ...filteredMessages,
-  {
-    role: "assistant",
-    content: "Randevu Onaylandı!",
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  },
-  randevuCard
-]));
+  // Eğer son mesaj bir RandevuAl formu ise, bu formdaki seçilen bilgileri kullan
+  const { hospital, doctor, department, date } = lastRandevuMessage.componentProps || {};
+
+  // RandevuAl form mesajını kaldır veya güncelle
+  const filteredMessages = state.chat.messages.filter(msg => msg.id !== lastRandevuMessage.id);
+
+  // Yeni bir RandevuSonuc kartı oluştur ve bilgileri ilet
+  const randevuCard = createComponentResponse(
+    "RandevuSonuc",
+    {
+      hospital: hospital || "",
+      doctor: doctor || "",
+      department: department || "",
+      date: date || "",
+      hideButtons: true // Onaylandıktan sonra butonları gizle
+    }
+  );
+
+  store.dispatch(setMessages([
+    ...filteredMessages,
+    {
+      role: "assistant",
+      content: "Randevu Onaylandı!",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    },
+    randevuCard // Yeni RandevuSonuc kartını ekle
+  ]));
+
+  await sendActionToAPI("Randevu Onayla");
 };

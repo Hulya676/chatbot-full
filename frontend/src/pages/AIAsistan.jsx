@@ -1,3 +1,4 @@
+// AIAsistan
 import React, { useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -28,7 +29,7 @@ const AIAsistan = () => {
   const showButtons = useSelector((state) => state.chat.showButtons);
   const dispatch = useDispatch();
   const [sendMessageApi] = useSendMessageMutation();
-  const messageHandler = new MessageHandler(dispatch, (msg) => dispatch(addMessage(msg)),sendMessageApi);
+  const messageHandler = new MessageHandler(dispatch, (msg) => dispatch(addMessage(msg)), sendMessageApi);
   const inputRef = useRef(null);
 
   const handleInputChange = (e) => {
@@ -41,6 +42,7 @@ const AIAsistan = () => {
   const sendMessage = () => {
     messageHandler.handleSendMessage(input, (val) => dispatch(setInput(val)), messages);
   };
+
 
   const handleExampleClick = (content) => {
     messageHandler.handleExampleClick(content, (val) => dispatch(setShowButtons(val)));
@@ -73,16 +75,17 @@ const AIAsistan = () => {
               ${msg.role === "user"
                 ? "ml-auto bg-[#241f4e] text-white rounded-l-3xl rounded-tr-3xl"
                 : "mr-auto bg-white text-black rounded-r-3xl rounded-tl-3xl"}`}>
+
               {msg.componentType
                 ? React.createElement(
                   componentMap[msg.componentType],
                   {
                     ...msg.componentProps,
                     // Fonksiyonları burada ekle
-                    onResult: () => { },  // genellikle bir işlemin tamamlandığını üst bileşene bildirmek için çağrılır. Örneğin, bir form doldurulup "Onayla"ya basıldığında, üst bileşene "işlem bitti" demek için kullanılabilir.
-                    onRemoveMessage: (id) => removeRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),// kartlara fonksiyonları props olarak iletmek
-                    onUpdateMessage: (id) => updateRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
-                    onConfirmMessage: (id) => confirmRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
+                    onResult: () => { },
+                    onRemoveMessage: removeRandevuSonucMessage, // Doğrudan fonksiyonu ilet
+                    onUpdateMessage: updateRandevuSonucMessage, // Doğrudan fonksiyonu ilet
+                    onConfirmMessage: confirmRandevuSonucMessage, // Doğrudan fonksiyonu ilet
                   }
                 )
                 : <div className="pb-2">{msg.content}</div>}

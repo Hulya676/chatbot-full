@@ -1,14 +1,17 @@
+// RandevuAl
 import React, { useState } from "react";
 import { createComponentResponse } from "../utils/Messages";
-import RandevuSonuc from "./RandevuSonuc";
 import { useSendMessageMutation } from "../api/api";
 import {
+  removeRandevuFormMessage,
   removeRandevuSonucMessage,
   updateRandevuSonucMessage,
   confirmRandevuSonucMessage
 } from '../utils/ButtonFunctions';
+import { store } from '../store/store'; // Redux store'a erişim için
+import { setMessages } from '../store/ChatSlice'; // setMessages import edildi
 
-function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
+function RandevuAl({ id }) {
     const hospitals = ["Devlet Hastanesi", "Şehir Hastanesi", "Özel Hastane", "Ankara Şehir Hastanesi"];
     const doctors = ["Dr. Ali Yılmaz", "Dr. Ayşe Demir", "Dr. Mehmet Kaya"];
     const departments = ["Kardiyoloji", "Dahiliye", "Ortopedi"];
@@ -17,42 +20,65 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
     const [selectedDoctor, setSelectedDoctor] = useState("");
     const [selectedDepartment, setSelectedDepartment] = useState("");
     const [selectedDate, setSelectedDate] = useState("");
+    const [selectedTime, setSelectedTime] = useState(""); // Saat için state
 
     const [currentStep, setCurrentStep] = useState(1);
     const [sendMessage] = useSendMessageMutation();
     const [showResult, setShowResult] = useState(false);
-    const [sonucComponent, setSonucComponent] = useState(null);
 
     const today = new Date();
     const formatDate = (date) => date.toISOString().split("T")[0];
 
+    // Saat seçeneklerini 15 dakikalık aralıklarla ve mesai saatleri içinde oluşturan fonksiyon
+    const generateTimeOptions = () => {
+        const times = [];
+        const startHour = 9;  // Mesai başlangıç saati
+        const endHour = 17;   // Mesai bitiş saati (bu saate kadar dahil)
+
+        for (let hour = startHour; hour < endHour; hour++) { // 9'dan başla, 17'den küçük olana kadar (yani 16'ya kadar)
+            for (let minute = 0; minute < 60; minute += 15) {
+                const hourStr = hour.toString().padStart(2, '0');
+                const minuteStr = minute.toString().padStart(2, '0');
+                times.push(`${hourStr}:${minuteStr}`);
+            }
+        }
+        return times;
+    };
+
+    const timeOptions = generateTimeOptions();
 
     const handleConfirm = () => {
+        // Form mesajını kaldır (id'si ile)
+        removeRandevuFormMessage(id); // RandevuAl bileşeninin kendi id'si
 
-        // Önce form mesajını kaldır
-        if (onRemoveFormMessage && setMessages && id) {
-            onRemoveFormMessage(setMessages, id);
-        }
-        // Sonra randevu sonuç mesajını oluştur ve state'e ata
-        setSonucComponent(
-            <RandevuSonuc
-                id={Date.now()}
-                hospital={selectedHospital}
-                doctor={selectedDoctor}
-                department={selectedDepartment}
-                date={selectedDate}
-                onRemoveMessage={(id) => removeRandevuSonucMessage(setMessages, id)}
-                onUpdateMessage={(id) => updateRandevuSonucMessage(setMessages, id)}
-                onConfirmMessage={(id) => confirmRandevuSonucMessage(setMessages, id)}
-            />
+        // Tarih ve saati birleştirerek tam bir tarih/saat stringi oluştur
+        const fullDateTime = selectedDate && selectedTime ? `${selectedDate} ${selectedTime}` : selectedDate;
+
+        // Randevu sonucunu bir mesaj olarak Redux store'a ekle
+        const newRandevuSonucMessage = createComponentResponse(
+            "RandevuSonuc",
+            {
+                hospital: selectedHospital,
+                doctor: selectedDoctor,
+                department: selectedDepartment,
+                date: fullDateTime, // Güncellendi: fullDateTime kullanıldı
+            },
+            Date.now() // Yeni bir id ile RandevuSonuc mesajı oluştur
         );
-        setShowResult(true);
-        setCurrentStep(5);
 
+        // Mevcut mesajlara yeni RandevuSonuc mesajını ekle
+        const state = store.getState();
+        store.dispatch(setMessages([...state.chat.messages, newRandevuSonucMessage]));
+
+        setShowResult(true);
+        setCurrentStep(5); // Randevu sonucu gösterildiğinde adımı 5'e ayarla
+
+        // Alanları temizle
         setSelectedHospital("");
         setSelectedDoctor("");
         setSelectedDepartment("");
         setSelectedDate("");
+        setSelectedTime(""); // Temizle: Saat alanı
     };
 
     return (
@@ -138,26 +164,30 @@ function RandevuAl({ onResult, onRemoveFormMessage, setMessages, id }) {
                         value={selectedDate}
                         min={formatDate(today)}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className="w-full border border-gray-300 rounded px-3 py-2"
+                        className="w-full border border-gray-300 rounded px-3 py-2 mb-4"
                     />
+                    <label className="block mb-1">Saat</label>
+                    <select
+                        value={selectedTime}
+                        onChange={(e) => setSelectedTime(e.target.value)}
+                        className="w-full border border-gray-300 rounded px-3 py-2"
+                    >
+                        <option value="">Seçiniz</option>
+                        {timeOptions.map((time, i) => (
+                            <option key={i} value={time}>{time}</option>
+                        ))}
+                    </select>
                     <button
                         className="w-full mt-5 bg-[#303030] hover:bg-[#414141] text-white py-2 px-4 rounded-2xl cursor-pointer"
                         onClick={async () => {
-                            if (!selectedDate) return;
-                            const response = await sendMessage([{ role: "assistant", content: `Tarih: ${selectedDate}` }]).unwrap();
+                            if (!selectedDate || !selectedTime) return;
+                            const response = await sendMessage([{ role: "assistant", content: `Tarih: ${selectedDate} Saat: ${selectedTime}` }]).unwrap();
                             console.log("✅ API cevabı:", response);
                             handleConfirm();
-                            { sonucComponent }
                         }}
                     >
-                        Devam Et
+                        Randevuyu Oluştur
                     </button>
-                </div>
-            )}
-
-            {currentStep === 5 && showResult && (
-                <div>
-                    {sonucComponent}
                 </div>
             )}
         </div>

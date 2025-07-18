@@ -4,7 +4,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import fetch from 'node-fetch'; // fetch hala diğer yerlerde kullanılıyor olabilir, çıkarmayın.
 import 'dotenv/config.js'; // .env dosyasını yükler
-
+import cors from 'cors';
 // ROUTES
 import appointmentRoutes from './routes/appointment.routes.js';
 import hospitalRoutes from './routes/hospital.routes.js';
@@ -18,6 +18,8 @@ const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(bodyParser.json());
+
+app.use(cors());
 
 // ROUTE MOUNTING
 app.use('/api/appointments', appointmentRoutes);
