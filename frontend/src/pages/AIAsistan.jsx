@@ -1,5 +1,4 @@
-// AIAsistan
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   setMessages,
@@ -21,7 +20,6 @@ import SonucGoruntule from '../components/SonucGoruntule';
 import HastaneBilgisiAl from '../components/HastaneBilgisiAl';
 import RandevuSonuc from '../components/RandevuSonuc';
 
-
 const AIAsistan = () => {
   const messages = useSelector((state) => state.chat.messages);
   const input = useSelector((state) => state.chat.input);
@@ -29,7 +27,7 @@ const AIAsistan = () => {
   const showButtons = useSelector((state) => state.chat.showButtons);
   const dispatch = useDispatch();
   const [sendMessageApi] = useSendMessageMutation();
-  const messageHandler = new MessageHandler(dispatch, (msg) => dispatch(addMessage(msg)), sendMessageApi);
+  const messageHandler = new MessageHandler(dispatch, (msg) => dispatch(addMessage(msg)));
   const inputRef = useRef(null);
 
   const handleInputChange = (e) => {
@@ -40,13 +38,21 @@ const AIAsistan = () => {
     }
   };
   const sendMessage = () => {
-    messageHandler.handleSendMessage(input, (val) => dispatch(setInput(val)), messages);
+    messageHandler.handleSendMessage(input, (val) => dispatch(setInput(val)), messages, sendMessageApi);
   };
-
 
   const handleExampleClick = (content) => {
-    messageHandler.handleExampleClick(content, (val) => dispatch(setShowButtons(val)));
+    messageHandler.handleExampleClick(content, (val) => dispatch(setShowButtons(val)), messages, sendMessageApi)
   };
+
+  const pageLoad = () => {
+    messageHandler.pageLoad(sendMessageApi);
+  }
+  useEffect(() => {
+    return () => {
+      pageLoad()
+    };
+  }, []);
 
   const componentMap = {
     NobetciEczane,
@@ -56,11 +62,10 @@ const AIAsistan = () => {
     RandevuSonuc,
   };
 
-
   return (
     <div className='min-h-screen w-full bg-gradient-to-tr from-[#e0def4] via-[#a1bef1] to-[#e0def4]'>
       <div className='md:w-[700px] md:mx-auto relative'>
-        <div className='bg-white h-17 rounded-b-3xl mx-auto mb-2 sticky top-0 z-50'>
+        <div className='bg-white h-17 rounded-b-3xl mx-auto mb-2 sticky top-0 z-50 shadow-xl'>
           <h2 className="text-xl font-semibold text-center pt-5 text-black/80">Randevu Asistanı</h2>
           <div className="absolute top-2 right-4 ">
             <button onClick={() => window.location.reload()}>
@@ -134,7 +139,7 @@ const AIAsistan = () => {
             <button
               onClick={sendMessage}
               disabled={loading}
-              className="absolute right-10 top-1/2 -translate-y-1/2 bg-white text-black px-4 py-3 rounded-full hover:bg-white/90 disabled:opacity-50"
+              className="absolute rotate-270 right-10 top-1/2 -translate-y-1/2 bg-white text-black px-4 py-3 rounded-full hover:bg-white/90 disabled:opacity-50"
             >
               ➤
             </button>

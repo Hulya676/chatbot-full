@@ -1,133 +1,174 @@
 // backend/wit_test/witTest.js
-// witTest.js – Wit.ai kısımları yorum satırı yapıldı, Gemini aktif
+// ---------------------------------------------------------------
+//  Hastane randevu asistanı – akış sırası: Hastane → Bölüm → Doktor → Tarih/Saat
+//  LLM: Google Gemini (2.5 flash)
+// ---------------------------------------------------------------
+
 import fetch from 'node-fetch';
-// import 'dotenv/config.js'; // Bu satırı server.js'de yüklendiği için burada yorum satırı bırakmaya devam edin
 
-// const WIT_TOKEN      = process.env.WIT_TOKEN; // Wit.ai token'ını yorum satırı yapın
+/* ------------------------------------------------------------------ */
+/* 0) Ortam değişkeni kontrolü                                         */
+/* ------------------------------------------------------------------ */
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY tanımlı değil (.env)!');
 
-if (!GEMINI_API_KEY) { // Sadece Gemini token kontrolü kalsın
-  throw new Error('GEMINI_API_KEY tanımlı değil (.env)!');
-}
-
-/* -------------------------------------------------------------- */
-/* 1) Oturum nesnesi (Randevu akışı için hala gerekli)            */
-/* -------------------------------------------------------------- */
+/* ------------------------------------------------------------------ */
+/* 1) Oturum durumu                                                    */
+/* ------------------------------------------------------------------ */
 const session = {
-  hastane  : null,
-  bolum    : null,
-  datetime : null,
+  hastane: null,
+  bolum: null,
+  doktor: null,
+  datetime: null,
+  state: 'initial',   // 'initial' | 'in_progress' | 'await_confirm'
 };
 
-/* -------------------------------------------------------------- */
-/* 2) Wit.ai – doğal dil & intent (TAMAMEN YORUM SATIRI YAPILDI) */
-/* -------------------------------------------------------------- */
-// export async function askWit(text) {
-//   const witApiVersion = '20250710';    // WIT API versioning
-//   const url = `https://api.wit.ai/message?v=${witApiVersion}&q=${encodeURIComponent(text)}`;
+/* ------------------------------------------------------------------ */
+/* 2) Yardımcı: Geçerli bilgi mi?                                      */
+/* ------------------------------------------------------------------ */
+function isValid(value) {
+  if (!value) return false;                    // null, undefined, "", 0
+  const v = value.trim().toLowerCase();
+  return !['bilinmiyor', '-', 'yok', 'unknown'].includes(v);
+}
 
-//   const res = await fetch(url, {
-//   headers: { Authorization: `Bearer ${WIT_TOKEN}` },
-//   });
-
-//   if (!res.ok) {
-//     const detail = await res.text();
-//     throw new Error(`Wit.ai Hatası: ${res.status} ${res.statusText} – ${detail}`);
-//   }
-//   return res.json();
-// }
-
-/* -------------------------------------------------------------- */
-/* 3) Gemini – LLM için ana fonksiyon                            */
-/* -------------------------------------------------------------- */
+/* ------------------------------------------------------------------ */
+/* 3) Gemini çağrısı                                                   */
+/* ------------------------------------------------------------------ */
 export async function askGemini(text, context = '') {
   const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
   const body = {
-    contents: [{
-      parts: [{ text: context ? `${context}\n${text}` : text }],
-    }],
+    contents: [{ parts: [{ text: context ? `${context}\n${text}` : text }] }],
   };
 
   const res = await fetch(url, {
-    method : 'POST',
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body   : JSON.stringify(body),
+    body: JSON.stringify(body),
   });
 
   const data = await res.json();
-
   if (data.error) {
-    console.error('[Gemini] Ayrıntı:', data.error);
+    console.error('[Gemini] Hata:', data.error);
+    // Hata durumunda sadece hata mesajını döndür, randevu akışını etkileme
     return '🤖 Şu an yanıt veremiyorum, lütfen daha sonra tekrar deneyin.';
   }
 
   return data.candidates?.[0]?.content?.parts?.[0]?.text
-           || '🤖 Anlayamadım, lütfen farklı ifade edin.';
+    ?? '🤖 Anlayamadım, lütfen farklı ifade edin.';
 }
 
-/* -------------------------------------------------------------- */
-/* 4) Yanıt üretimi (Wit.ai bağımlılıkları kaldırıldı)            */
-/* -------------------------------------------------------------- */
-// generateResponse fonksiyonu burada zaten export ediliyor
-export async function generateResponse(userMessage, llmFn = askGemini) { // generateResponse sadece userMessage alacak
-  const text = userMessage.toLowerCase();
+/* ------------------------------------------------------------------ */
+/* 4) Ana yanıt üreticisi                                              */
+/* ------------------------------------------------------------------ */
+export async function generateResponse(userMessage, llmFn = askGemini) {
+  const text = userMessage.toLowerCase().trim();
+  console.log('[Session]', session);
 
-  // Basit iptal komutu hala çalışsın
+  /* 4 A) İptal komutu ---------------------------------------------- */
   if (text.includes('iptal') || text.includes('cancel')) {
-    Object.keys(session).forEach(k => session[k] = null);
-    return 'Randevu işlemi iptal edildi.';
+    resetSession();
+    return 'Randevu işlemi iptal edildi. Yeni bir randevu oluşturmak isterseniz "randevu al" gibi bir ifade kullanabilirsiniz.';
   }
 
-  // Gemini'ye göndereceğimiz bağlamı oluşturalım
-  // Randevu akışını Gemini'nin anlamasına ve yönetmesine güveniyoruz
-  const context = `Bir hastane randevu asistanısın. Kullanıcıdan hastane, bölüm ve tarih/saat bilgilerini alarak randevu oluşturma sürecini yönet. Bilgiler eksikse sor. Kullanıcı "randevu" kelimesiyle başlayan bir istekte bulunduğunda veya randevu akışı içindeysek ilgili bilgileri almaya çalış. Gerekirse bu bilgileri oturum değişkenlerinden (hastane, bolum, datetime) çek. Eksik bilgi varsa kullanıcıya sor.
-  Mevcut oturum bilgileri: Hastane: ${session.hastane || 'bilinmiyor'}, Bölüm: ${session.bolum || 'bilinmiyor'}, Tarih/Saat: ${session.datetime || 'bilinmiyor'}.
-  Sadece randevu ile ilgili konularda yardımcı ol. Diğer soruları nazikçe reddet.`;
-
-  // Randevu akışı kontrolü (Gemini'nin yorumlamasına dayalı)
-  if (text.includes('randevu') || session.hastane || session.bolum || session.datetime) {
-      // Bu kısımda Gemini'nin eksik bilgileri istemesini bekliyoruz.
-      // Basit bir örnek olarak, kullanıcıya bilgi sormasını Gemini'ye bırakıyoruz.
-      // Daha gelişmiş bir akış için Gemini'den belirli anahtar kelimeleri veya yapıları döndürmesini isteyebiliriz.
-
-      // Doğrudan Gemini'ye soruyu yönlendirelim ve randevu bilgilerini doldurmasını isteyelim
-      const geminiResponse = await llmFn(userMessage, context);
-
-      // Gemini'nin yanıtını işleyerek session'ı güncellemeye çalışın
-      // Bu kısım Gemini'nin nasıl bir formatta yanıt verdiğine bağlı olarak ayarlanmalı
-      // Şimdilik, basit bir örnek:
-      // Gemini'nin yanıtında "hastane: X", "bölüm: Y", "tarih: Z" gibi ifadeler varsa bunları yakalamaya çalışalım.
-      const hastaneMatch = geminiResponse.match(/hastane:\s*([A-Za-zÇçĞğİıÖöŞşÜü\s]+)/i);
-      const bolumMatch = geminiResponse.match(/bölüm:\s*([A-Za-zÇçĞğİıÖöŞşÜü\s]+)/i);
-      const datetimeMatch = geminiResponse.match(/(tarih|saat):\s*([0-9\/\.:\s]+)/i);
-
-      if (hastaneMatch) session.hastane = hastaneMatch[1].trim();
-      if (bolumMatch) session.bolum = bolumMatch[1].trim();
-      if (datetimeMatch) session.datetime = datetimeMatch[2].trim();
-
-      if (session.hastane && session.bolum && session.datetime) {
-          const confirmMessage = `✅ Onay: ${session.hastane} / ${session.bolum} için ${session.datetime} tarihinde randevu. Onaylıyor musunuz? (evet/hayır)`;
-          if (!text.includes('evet') && !text.includes('onaylıyorum')) { // Onay kelimeleri
-              return confirmMessage;
-          } else {
-              Object.keys(session).forEach(k => session[k] = null); // Oturumu sıfırla
-              return 'Randevunuz başarıyla oluşturuldu!';
-          }
-      } else {
-          // Henüz tüm bilgiler tamamlanmadıysa Gemini'nin verdiği yanıtı döndür
-          return geminiResponse;
-      }
+  /* 4 B) Onay aşaması yönetimi (öncelikli) ------------------------- */
+  if (session.state === 'await_confirm') {
+    if (text.includes('evet') || text.includes('e')) { // "e" kısaltmasını da ekledik
+      resetSession();
+      return 'Randevunuz başarıyla oluşturuldu! Başka bir randevu almak isterseniz bana söyleyebilirsiniz.';
+    }
+    if (text.includes('hayır') || text.includes('h')) { // "h" kısaltmasını da ekledik
+      resetSession();
+      return 'Randevu işlemi iptal edildi. Yeni bir randevu oluşturmak ister misiniz?';
+    }
+    // Eğer onay aşamasındaysa ama "evet" veya "hayır" demediyse, tekrar sor
+    return `Randevu bilgileri: ${session.hastane} / ${session.bolum} / Dr. ${session.doktor} – ${session.datetime}. Onaylıyor musunuz? (evet/hayır)`;
   }
 
-  // Randevu akışı yoksa, doğrudan Gemini'ye soruyu ilet
-  return await llmFn(userMessage, context);
+  /* 4 C) Akışı başlatma (randevu kelimesi vs. veya zaten akışta olma) */
+  // Eğer henüz randevu akışı başlamadıysa ve kullanıcı 'randevu' kelimesini içermeyen bir şey yazdıysa,
+  // genel sohbet modunda Gemini'ye soralım.
+  if (!text.includes('randevu') && session.state === 'initial') {
+    // Genel sohbet için herhangi bir özel context vermeden Gemini'ye sor
+    const generalChatReply = await llmFn(userMessage);
+    // Eğer Gemini'nin cevabı "randevu" içeriyorsa, akışı başlatalım
+    if (generalChatReply.toLowerCase().includes('randevu')) {
+      session.state = 'in_progress';
+      return 'Randevu almak istediğinizi anladım. Hangi hastaneden randevu almak istersiniz?';
+    }
+    return generalChatReply; // Randevu ile ilgili değilse Gemini'nin cevabını döndür
+  } else if (text.includes('randevu') && session.state === 'initial') {
+    // Kullanıcı "randevu" ile başladıysa, hemen in_progress yap
+    session.state = 'in_progress';
+    return 'Randevu almak istediğinizi anladım. Hangi hastaneden randevu almak istersiniz?';
+  }
+
+  // Eğer akış in_progress ise veya randevu kelimesi geçtiyse devam et
+  session.state = 'in_progress';
+
+  /* 4 D) Gemini’den yapılandırılmış yanıt talebi ------------------- */
+  const currentCtx = `
+Sen bir hastane randevu asistanısın. Kullanıcıdan HASTANE, BÖLÜM, DOKTOR ve TARİH_SAAT bilgilerini eksiksiz toplamalısın.
+Mevcut oturum: Hastane=${session.hastane ?? 'bilinmiyor'}, Bölüm=${session.bolum ?? 'bilinmiyor'}, Doktor=${session.doktor ?? 'bilinmiyor'}, Tarih/Saat=${session.datetime ?? 'bilinmiyor'}.
+Kullanıcının mesajında bu bilgilerden biri/birkaçını bulursan aşağıdaki biçimde ÇIKTI ver (sadece bulduklarını yaz):
+HASTANE: [...]
+BÖLÜM: [...]
+DOKTOR: [...]
+TARİH_SAAT: [...]
+Bilgi yoksa, hangi bilginin eksik olduğunu belirtip kısa bir soru sor.
+`;
+
+  const geminiResp = await llmFn(userMessage, currentCtx);
+  console.log('[Gemini]', geminiResp);
+
+  /* 4 E) Bilgi ayıkla ---------------------------------------------- */
+  const info = {};
+  geminiResp.split('\n').forEach(line => {
+    let m;
+    if (m = line.match(/^HASTANE:\s*(.+)/i)) info.hastane = m[1].trim();
+    else if (m = line.match(/^BÖLÜM:\s*(.+)/i)) info.bolum = m[1].trim();
+    else if (m = line.match(/^DOKTOR:\s*(.+)/i)) info.doktor = m[1].trim();
+    else if (m = line.match(/^TARİH_SAAT:\s*(.+)/i)) info.datetime = m[1].trim();
+  });
+
+  /* 4 F) Oturumu güncelle (yalnızca geçerli değerler) -------------- */
+  if (isValid(info.hastane) && !isValid(session.hastane)) session.hastane = info.hastane;
+  if (isValid(info.bolum) && !isValid(session.bolum)) session.bolum = info.bolum;
+  if (isValid(info.doktor) && !isValid(session.doktor)) session.doktor = info.doktor;
+  if (isValid(info.datetime) && !isValid(session.datetime)) session.datetime = info.datetime;
+
+  /* 4 G) Sıralı sorular ------------------------------------------- */
+  if (session.state === 'in_progress') {
+    if (!isValid(session.hastane))
+      return 'Hangi hastaneden randevu almak istersiniz?';
+    if (!isValid(session.bolum))
+      return `Hangi bölümden randevu almak istersiniz? (Hastane: ${session.hastane})`;
+    if (!isValid(session.doktor))
+      return `Hangi doktordan randevu almak istersiniz? (Hastane: ${session.hastane}, Bölüm: ${session.bolum})`;
+    if (!isValid(session.datetime))
+      return `Hangi tarih ve saatte randevu almak istersiniz? (Hastane: ${session.hastane}, Bölüm: ${session.bolum}, Doktor: ${session.doktor})`;
+  }
+
+  /* 4 H) Onay aşamasına geçiş ------------------------------------- */
+  if (session.state === 'in_progress' &&
+    isValid(session.hastane) && isValid(session.bolum) &&
+    isValid(session.doktor) && isValid(session.datetime)) {
+    session.state = 'await_confirm';
+    return `✅ Onay: ${session.hastane} / ${session.bolum} / Dr. ${session.doktor} – ${session.datetime}. Onaylıyor musunuz? (evet/hayır)`;
+  }
+
+  /* 4 I) Beklenmedik durum – Gemini çıktısını ilet ---------------- */
+  // Bu kısma normalde düşmemeli, çünkü tüm durumlar yukarıda ele alınıyor olmalı.
+  // Ancak bir 'fallback' olarak bırakılabilir.
+  return geminiResp;
 }
 
-// Session bilgilerini dışarıya açabiliriz, ileride resetlemek veya kontrol etmek için faydalı olabilir.
+/* ------------------------------------------------------------------ */
+/* 5) Oturumu sıfırlama                                                */
+/* ------------------------------------------------------------------ */
 export function resetSession() {
-    Object.keys(session).forEach(k => session[k] = null);
+  Object.keys(session).forEach(k => session[k] = null);
+  session.state = 'initial';
 }
 
-// Artık burada hiçbir şey export etmiyoruz, çünkü fonksiyonlar tanımlandıkları yerde zaten export ediliyorlar.
-// export { askGemini }; // Bu satır kaldırıldı!

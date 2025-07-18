@@ -16,12 +16,12 @@ export const COMPONENT_TYPES = { //gönderilen mesaja göre components
 
 export const createComponentByType = (type = {}) => {
     const id = Date.now();
-    
+
     switch (type) {
         case COMPONENT_TYPES.RANDEVU_AL:
             return {
                 component: createComponentResponse(
-                    'RandevuAl', 
+                    'RandevuAl',
                     {
                         id: id
                     },
@@ -51,7 +51,7 @@ export const createComponentByType = (type = {}) => {
 
 export const getComponentTypeFromContent = (content) => {
     const lowerContent = content.toLowerCase();
-    
+
     if (lowerContent.includes(COMPONENT_TYPES.RANDEVU_AL)) {
         return COMPONENT_TYPES.RANDEVU_AL;
     } else if (lowerContent.includes(COMPONENT_TYPES.SONUC_GORUNTULE)) {
@@ -61,6 +61,6 @@ export const getComponentTypeFromContent = (content) => {
     } else if (lowerContent.includes(COMPONENT_TYPES.NOBETCI_ECZANE)) {
         return COMPONENT_TYPES.NOBETCI_ECZANE;
     }
-    
+
     return null;
 };

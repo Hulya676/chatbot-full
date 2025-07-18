@@ -1,28 +1,29 @@
-// ButtonFunctions
-// Component işlemleri (güncelle, onayla, sil) + API ile iletişim içerir
-
+//Componentler (ör: RandevuAl, RandevuSonuc) ile ilgili özel işlemleri (onayla, sil, güncelle gibi) yönetir.API'ye istek göndermek veya mesajı güncellemek için fonksiyonlar içerir.
+import React from 'react'
+import RandevuAl from '../components/RandevuAl';
+import RandevuSonuc from '../components/RandevuSonuc';
+import { createComponentResponse } from '../utils/Messages';
 import { store } from '../store/store';
-import { setMessages } from '../store/ChatSlice';
-import { createComponentResponse } from './Messages';
 import { localApi } from '../api/api';
+import { setMessages } from '../store/ChatSlice';
 
-// API'ye bir metin gönder
 export const sendActionToAPI = async (actionText) => {
-  try {
-    console.log("🟡 API'ye gönderiliyor:", actionText);
-    const result = await store.dispatch(
-      localApi.endpoints.sendMessage.initiate([
-        { role: "user", content: actionText }
-      ])
-    ).unwrap();
-    console.log("🟢 API'den gelen cevap:", result);
-    return result;
-  } catch (e) {
-    console.error("API hatası:", e);
-  }
+    try {
+        console.log("🟡 API'ye gönderiliyor:", actionText); // GÖNDERİLİYOR MU?
+        const result = await store.dispatch(
+            localApi.endpoints.sendMessage.initiate([
+                { role: "user", content: actionText }
+            ])
+        ).unwrap();
+
+        console.log("🟢 API'den gelen cevap:", result); // GELEN CEVAP
+
+        return result;
+    } catch (e) {
+        console.error("API hatası:", e);
+    }
 };
 
-// Randevu formu mesajını sil ve metinle değiştir
 export const removeRandevuFormMessage = (id) => {
   const state = store.getState();
   const updated = state.chat.messages.map(msg =>
@@ -33,7 +34,6 @@ export const removeRandevuFormMessage = (id) => {
   store.dispatch(setMessages(updated));
 };
 
-// Randevu sonucunu iptal et ve metinle değiştir
 export const removeRandevuSonucMessage = () => { // id parametresini kaldırdık
   const state = store.getState();
   // RandevuSonuc tipindeki son mesajı bul ve onu iptal edildi olarak işaretle
@@ -51,8 +51,6 @@ export const removeRandevuSonucMessage = () => { // id parametresini kaldırdık
   store.dispatch(setMessages(updatedMessages));
 };
 
-
-// Randevuyu güncelle ve yeni bir RandevuAl formu ekle
 export const updateRandevuSonucMessage = () => { // id parametresini kaldırdık
   const state = store.getState();
 
@@ -86,7 +84,6 @@ export const updateRandevuSonucMessage = () => { // id parametresini kaldırdık
 
   store.dispatch(setMessages([...updatedMessages, newFormMessage]));
 };
-
 
 // Randevuyu onayla ve bileşeni tekrar ama props olarak kaydet
 export const confirmRandevuSonucMessage = async () => {

@@ -20,7 +20,7 @@ const HastaneBilgisiAl = ({
         <p><strong>Faks:</strong> {faks}</p>
         <p><strong>E-Posta:</strong> {email}</p>
         <p><strong>Web Sitesi:</strong> <a href={web} className="text-blue-600 underline" target="_blank" rel="noreferrer">{web}</a></p>
-        <p><strong>Çalışma Saatleri:</strong> {calismaSaatleri}</p>
+         <p><strong>Çalışma Saatleri:</strong> {calismaSaatleri}</p>{/* rel="noreferrer" yönlendirilen sayfanın nereden yönlendirildiğini bilmemesini sağlar. */}
       </div>
     </div>
   );
