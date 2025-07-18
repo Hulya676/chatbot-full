@@ -1,4 +1,6 @@
 //Redux store'un ana dosyasıdır.ChatSlice ve API slice'ı burada birleştirilir.
+//Tüm uygulama için merkezi state yönetimi sağlar.
+
 import { configureStore } from '@reduxjs/toolkit';
 import chatReducer from './ChatSlice'; // ✅ doğru path olduğundan emin ol
 import { localApi } from '../api/api'; // eğer RTK Query varsa

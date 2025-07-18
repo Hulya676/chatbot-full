@@ -71,7 +71,6 @@ const AIAsistan = () => {
               ${msg.role === "user"
                 ? "ml-auto bg-[#241f4e] text-white rounded-l-3xl rounded-tr-3xl"
                 : "mr-auto bg-white text-black rounded-r-3xl rounded-tl-3xl"}`}>
-
               {msg.componentType
                 ? React.createElement(
                   componentMap[msg.componentType],
@@ -79,7 +78,7 @@ const AIAsistan = () => {
                     ...msg.componentProps,
                     // Fonksiyonları burada ekle
                     onResult: () => { },  // genellikle bir işlemin tamamlandığını üst bileşene bildirmek için çağrılır. Örneğin, bir form doldurulup "Onayla"ya basıldığında, üst bileşene "işlem bitti" demek için kullanılabilir.
-                    onRemoveMessage: (id) => removeRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
+                    onRemoveMessage: (id) => removeRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),// kartlara fonksiyonları props olarak iletmek
                     onUpdateMessage: (id) => updateRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
                     onConfirmMessage: (id) => confirmRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
                   }

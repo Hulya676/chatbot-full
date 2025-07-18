@@ -43,69 +43,90 @@ export const removeRandevuSonucMessage = () => {
 };
 
 // Randevuyu güncelle ve yeni bir RandevuAl formu ekle
-export const updateRandevuSonucMessage = (id) => {
+export const updateRandevuSonucMessage = () => {
   const state = store.getState();
+
+  // Son randevuyu bul (tipi RandevuAl veya RandevuSonuc olan)
+  const lastRandevu = [...state.chat.messages]
+    .reverse()
+    .find(msg => msg.componentType === "RandevuAl" || msg.componentType === "RandevuSonuc");
+
+  if (!lastRandevu || !lastRandevu.componentProps?.id) {
+    console.warn("Güncellenecek randevu bulunamadı.");
+    return;
+  }
+
+  const targetId = lastRandevu.componentProps.id;
+
+  // Mesajı güncelle
   const updatedMessages = state.chat.messages.map(msg =>
-    msg.id === id
+    msg.componentProps?.id === targetId
       ? {
           ...msg,
-          componentType: "RandevuSonuc", // ✅ doğru component adı
-          componentProps: { ...msg.componentProps }, // mevcut props korunur
-          content: null // bileşen gösterileceği için metin olmayabilir
+          componentType: "RandevuSonuc",
+          componentProps: {
+            ...msg.componentProps,
+            hideButtons: true // örnek ekstra prop
+          },
+          content: null
         }
       : msg
   );
-    const newFormMessage = {
+
+  // Yeni form mesajı
+  const newFormMessage = {
     componentType: "RandevuAl",
     componentProps: {
       id: Date.now()
-      // Gerekirse başka veri ekle
     }
   };
+
   store.dispatch(setMessages([...updatedMessages, newFormMessage]));
 };
 
+
+
+// Randevuyu onayla ve bileşeni tekrar ama props olarak kaydet
 // Randevuyu onayla ve bileşeni tekrar ama props olarak kaydet
 export const confirmRandevuSonucMessage = () => {
   const state = store.getState();
 
   // Son randevuya ait bilgileri bul (örnek: en son RandevuAl veya RandevuSonuc componentType'lı mesaj)
-  const lastRandevu = [...state.chat.messages]
-    .reverse()
-    .find(msg => msg.componentType === "RandevuAl" || msg.componentType === "RandevuSonuc");
+const lastRandevuWithIndex = [...state.chat.messages]
+  .map((msg, idx) => ({ msg, idx }))
+  .reverse()
+  .find(obj => obj.msg.componentType === "RandevuAl" || obj.msg.componentType === "RandevuSonuc");
 
-  // Eğer randevu bilgisi yoksa, sadece onay mesajı ekle
-  if (!lastRandevu) {
-    const newMessage = {
-      role: "assistant",
-      content: "Randevu Onaylandı!",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-    store.dispatch(setMessages([...state.chat.messages, newMessage]));
-    return;
+if (!lastRandevuWithIndex) {
+  const newMessage = {
+    role: "assistant",
+    content: "Randevu Onaylandı!",
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  };
+  store.dispatch(setMessages([...state.chat.messages, newMessage]));
+  return;
+}
+
+const filteredMessages = state.chat.messages.filter((_, idx) => idx !== lastRandevuWithIndex.idx);
+
+const randevuCard = createComponentResponse(
+  "RandevuSonuc",
+  {
+    hospital: lastRandevuWithIndex.msg.componentProps?.hospital || "",
+    doctor: lastRandevuWithIndex.msg.componentProps?.doctor || "",
+    department: lastRandevuWithIndex.msg.componentProps?.department || "",
+    date: lastRandevuWithIndex.msg.componentProps?.date || "",
+    hideButtons: true
   }
- // Onay bekleyen kartı mesaj listesinden çıkar
-  const filteredMessages = state.chat.messages.filter((_, idx) => idx !== lastRandevuIndex.idx);
-  // Randevu kartı mesajı oluştur
-  const randevuCard = createComponentResponse(
-    "RandevuSonuc",
-    {
-      hospital: lastRandevu.componentProps?.hospital || "",
-      doctor: lastRandevu.componentProps?.doctor || "",
-      department: lastRandevu.componentProps?.department || "",
-      date: lastRandevu.componentProps?.date || "",
-       hideButtons: true //butonlar onaylandıktan sonra gözükmez
-    }
-  );
+);
 
-  // Randevu onaylandı mesajı ve kartı ekle
-  store.dispatch(setMessages([
-    ...state.chat.messages,
-    {
-      role: "assistant",
-      content: "Randevu Onaylandı!",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
-    randevuCard
-  ]));
+store.dispatch(setMessages([
+  ...filteredMessages,
+  {
+    role: "assistant",
+    content: "Randevu Onaylandı!",
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  },
+  randevuCard
+]));
 };

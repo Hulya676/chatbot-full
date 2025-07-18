@@ -1,4 +1,4 @@
-//Kullanıcı mesajı, asistan mesajı veya component mesajı oluşturmak için yardımcı fonksiyonlar içerir.Her mesajın rolünü, içeriğini ve zaman bilgisini ayarlar.
+//Kullanıcı mesajı, asistan mesajı veya component mesajı oluşturmak için(Kart mesajı, kullanıcı mesajı, asistan mesajı objeleri oluşturur.) yardımcı fonksiyonlar içerir.Her mesajın rolünü, içeriğini ve zaman bilgisini ayarlar.
 import React from "react";
 import RandevuSonuc from "../components/RandevuSonuc";
 
