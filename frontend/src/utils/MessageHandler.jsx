@@ -29,8 +29,8 @@ export class MessageHandler {
     await this.processMessage(content, messages, userMessage);
     try {
       const aiReply = await sendMessageApi([userMessage]).unwrap();
-      console.log([userMessage])
-      console.log(aiReply)
+      console.log("✅ Kullanıcı:", [userMessage])
+      console.log("✅ API cevabı:", aiReply)
     } catch (error) {
       console.error('AI mesajı gönderilirken hata:', error);
     }

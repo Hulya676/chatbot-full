@@ -133,7 +133,7 @@ const AIAsistan = () => {
             <button
               onClick={sendMessage}
               disabled={loading}
-              className="absolute right-10 top-1/2 -translate-y-1/2 bg-white text-black px-4 py-3 rounded-full hover:bg-white/90 disabled:opacity-50"
+              className="absolute rotate-270 right-10 top-1/2 -translate-y-1/2 bg-white text-black px-4 py-3 rounded-full hover:bg-white/90 disabled:opacity-50"
             >
               ➤
             </button>
