@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
+
 export const localApi = createApi({
     reducerPath: 'localApi',
     baseQuery: fetchBaseQuery({
@@ -10,10 +11,9 @@ export const localApi = createApi({
         },
     }),
     endpoints: (builder) => ({
-        // 1. Mesaj gönderme
         sendMessage: builder.mutation({
             query: (messages) => ({
-                url: 'chat',
+                url: 'chat', // http://localhost:3000/chat
                 method: 'POST',
                 headers: {
                     "x-ai-provider": "gemini"
@@ -22,35 +22,12 @@ export const localApi = createApi({
                     message: messages[messages.length - 1].content
                 },
             }),
-            transformResponse: (response) => response.reply || 'Yanıt yok',
-        }),
-
-        // 2. Tüm hastaneleri al
-        getHospitals: builder.query({
-            query: () => 'api/hospitals',
-        }),
-
-        // 3. Seçilen hastanenin branşlarını al
-        getBranchesByHospitalId: builder.query({
-            query: (hospitalId) => `api/hospitals/${hospitalId}/branches`,
-        }),
-
-        // 4. Seçilen branşın doktorlarını al
-        getDoctorsByBranchId: builder.query({
-            query: (branchId) => `api/branches/${branchId}/doctors`,
-        }),
-
-        // 5. Seçilen doktorun müsait saatlerini al
-        getTimesByDoctorId: builder.query({
-            query: (doctorId) => `api/doctors/${doctorId}/times`,
+            transformResponse: (response) => {
+                // Geri dönen yanıt direkt string ise:
+                return response.reply || 'Yanıt yok';
+            },
         }),
     }),
 });
 
-export const {
-    useSendMessageMutation,
-    useGetHospitalsQuery,
-    useGetBranchesByHospitalIdQuery,
-    useGetDoctorsByBranchIdQuery,
-    useGetTimesByDoctorIdQuery
-} = localApi;
+export const { useSendMessageMutation } = localApi;

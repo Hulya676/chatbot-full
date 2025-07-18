@@ -7,7 +7,6 @@
 import { createUserMessage, createTextResponse } from './Messages';
 import { createComponentByType, getComponentTypeFromContent } from './ComponentMapper';
 import { setMessages, setLoading, addMessage } from '../store/ChatSlice';
-import { useSendMessageMutation } from '../api/api';
 
 //this = MessageHandler nesnesinin kendisi ve constructor'da atanan React state fonksiyonlarına erişim sağlar.
 //await kod gerçekleşene kadarbekler.
@@ -45,10 +44,10 @@ export class MessageHandler {
     this.dispatch(setLoading(true));
     await this.processMessage(input, [...messages, userMessage], userMessage);
   }
-  //Eğer içerik özel bir bileşen gerektiriyorsa (ör: "randevu al", "sonuç görüntüle" gibi), ilgili React componentini oluşturur ve mesaj listesine ekler.
-  //Eğer özel bir bileşen gerekmiyorsa, AI'den cevap almak için API'ye istek atar ve gelen cevabı mesaj olarak ekler.
-  //Her durumda, yükleniyor (loading) durumunu yönetir.
-  async processMessage(content, messages = [], userMessage = null) {
+//Eğer içerik özel bir bileşen gerektiriyorsa (ör: "randevu al", "sonuç görüntüle" gibi), ilgili React componentini oluşturur ve mesaj listesine ekler.
+//Eğer özel bir bileşen gerekmiyorsa, AI'den cevap almak için API'ye istek atar ve gelen cevabı mesaj olarak ekler.
+//Her durumda, yükleniyor (loading) durumunu yönetir.
+async processMessage(content, messages = [], userMessage = null) {
     const componentType = getComponentTypeFromContent(content);
 
     if (componentType) {
