@@ -22,6 +22,11 @@ export class MessageHandler {
     this.handleMessageUpdate = handleMessageUpdate;
   }
 
+  async pageLoad(sendMessageApi) {
+    console.log("Api'ye iptal mesajı gönderildi!");
+    sendMessageApi([{ role: "assistant", content: "iptal" }])
+  }
+
   async handleExampleClick(content, setShowButtons, messages, sendMessageApi) {
     setShowButtons(false);
     const userMessage = createUserMessage(content);

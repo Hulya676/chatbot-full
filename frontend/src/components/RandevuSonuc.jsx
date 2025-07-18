@@ -23,8 +23,7 @@ const RandevuSonuc = ({ hospital, doctor, department, date, onRemoveMessage, id,
                     <p className="text-[18px]"><strong>Hastane:</strong> {hospital}</p>
                     <p className="text-[18px]"><strong>Doktor:</strong> {doctor}</p>
                     <p className="text-[18px]"><strong>Bölüm:</strong> {department}</p>
-                    <p className="text-[18px]"><strong>Tarih:</strong> {formattedDate}</p>
-                    <p className="text-[18px]"><strong>Saat:</strong> {time}</p>
+                    <p className="text-[18px]"><strong>Tarih ve Saat:</strong> {date}</p>
                 </div>
             </div>
 

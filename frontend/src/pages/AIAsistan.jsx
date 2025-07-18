@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   setMessages,
@@ -19,7 +19,6 @@ import RandevuAl from '../components/RandevuAl';
 import SonucGoruntule from '../components/SonucGoruntule';
 import HastaneBilgisiAl from '../components/HastaneBilgisiAl';
 import RandevuSonuc from '../components/RandevuSonuc';
-
 
 const AIAsistan = () => {
   const messages = useSelector((state) => state.chat.messages);
@@ -46,6 +45,14 @@ const AIAsistan = () => {
     messageHandler.handleExampleClick(content, (val) => dispatch(setShowButtons(val)), messages, sendMessageApi)
   };
 
+  const pageLoad = () => {
+    messageHandler.pageLoad(sendMessageApi);
+  }
+  useEffect(() => {
+    return () => {
+      pageLoad()
+    };
+  }, []);
 
   const componentMap = {
     NobetciEczane,
@@ -55,11 +62,10 @@ const AIAsistan = () => {
     RandevuSonuc,
   };
 
-
   return (
     <div className='min-h-screen w-full bg-gradient-to-tr from-[#e0def4] via-[#a1bef1] to-[#e0def4]'>
       <div className='md:w-[700px] md:mx-auto relative'>
-        <div className='bg-white h-17 rounded-b-3xl mx-auto mb-2 sticky top-0 z-50'>
+        <div className='bg-white h-17 rounded-b-3xl mx-auto mb-2 sticky top-0 z-50 shadow-xl'>
           <h2 className="text-xl font-semibold text-center pt-5 text-black/80">Randevu Asistanı</h2>
           <div className="absolute top-2 right-4 ">
             <button onClick={() => window.location.reload()}>
@@ -82,9 +88,9 @@ const AIAsistan = () => {
                     ...msg.componentProps,
                     // Fonksiyonları burada ekle
                     onResult: () => { },
-                    onRemoveMessage: (id) => removeRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
-                    onUpdateMessage: (id) => updateRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
-                    onConfirmMessage: (id) => confirmRandevuSonucMessage((msgs) => dispatch(setMessages(msgs)), id),
+                    onRemoveMessage: removeRandevuSonucMessage, // Doğrudan fonksiyonu ilet
+                    onUpdateMessage: updateRandevuSonucMessage, // Doğrudan fonksiyonu ilet
+                    onConfirmMessage: confirmRandevuSonucMessage, // Doğrudan fonksiyonu ilet
                   }
                 )
                 : <div className="pb-2">{msg.content}</div>}

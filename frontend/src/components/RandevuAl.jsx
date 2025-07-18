@@ -7,9 +7,18 @@ import {
     useGetDoctorsByBranchIdQuery,
     useGetTimesByDoctorIdQuery,
 } from "../api/api";
+import {
+    removeRandevuFormMessage,
+    removeRandevuSonucMessage,
+    updateRandevuSonucMessage,
+    confirmRandevuSonucMessage
+} from '../utils/ButtonFunctions';
+import { store } from '../store/store'; // Redux store'a erişim için
+import { setMessages } from '../store/ChatSlice'; // setMessages import edildi
+import { createComponentResponse } from "../utils/Messages";
 
 // Randevu oluşturma bileşeni
-function RandevuAl({ onRemoveFormMessage, setMessages, id }) {
+function RandevuAl({ id }) {
     // Hastaneleri API'den al
     const { data: hospitals } = useGetHospitalsQuery();
 
@@ -85,21 +94,25 @@ function RandevuAl({ onRemoveFormMessage, setMessages, id }) {
     // Randevu onaylandığında yapılacak işlemler
     const handleConfirm = () => {
         // Form mesajını kaldır
-        if (onRemoveFormMessage && setMessages && id) {
-            onRemoveFormMessage(setMessages, id);
-        }
+        removeRandevuFormMessage(id);
+
+        const fullDateTime = formattedDate && formattedTime ? `${formattedDate} ${formattedTime}` : formattedDate;
 
         // Sonuç bileşenini oluştur
-        setSonucComponent(
-            <RandevuSonuc
-                id={Date.now()}
-                hospital={selectedHospitalObj?.name || "Bilinmiyor"}
-                doctor={selectedDoctorObj?.name || "Bilinmiyor"}
-                department={selectedDepartmentObj?.name || "Bilinmiyor"}
-                date={`${selectedDate}`}
-                time={`${selectedTime}`}
-            />
+        const newRandevuSonucMessage = createComponentResponse(
+            "RandevuSonuc",
+            {
+                id: Date.now(),
+                hospital: selectedHospitalObj?.name || "Bilinmiyor",
+                doctor: selectedDoctorObj?.name || "Bilinmiyor",
+                department: selectedDepartmentObj?.name || "Bilinmiyor",
+                date: `${fullDateTime}`,
+            },
+            Date.now() // Yeni bir id ile RandevuSonuc mesajı oluştur
         );
+
+        const state = store.getState();
+        store.dispatch(setMessages([...state.chat.messages, newRandevuSonucMessage]));
 
         // Sonucu göster ve adımı 5'e getir
         setShowResult(true);
@@ -110,6 +123,7 @@ function RandevuAl({ onRemoveFormMessage, setMessages, id }) {
         setSelectedDoctor("");
         setSelectedDepartment("");
         setSelectedDate("");
+        setSelectedTime(""); // Temizle: Saat alanı
     };
 
     return (
