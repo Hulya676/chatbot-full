@@ -19,6 +19,7 @@ import RandevuAl from '../components/RandevuAl';
 import SonucGoruntule from '../components/SonucGoruntule';
 import HastaneBilgisiAl from '../components/HastaneBilgisiAl';
 import RandevuSonuc from '../components/RandevuSonuc';
+import ReactMarkdown from 'react-markdown';
 
 const AIAsistan = () => {
   const messages = useSelector((state) => state.chat.messages);
@@ -93,7 +94,7 @@ const AIAsistan = () => {
                     onConfirmMessage: confirmRandevuSonucMessage, // Doğrudan fonksiyonu ilet
                   }
                 )
-                : <div className="pb-2">{msg.content}</div>}
+                : <div className="pb-2"><ReactMarkdown>{msg.content}</ReactMarkdown></div>}
 
               {msg.timestamp && (
                 <div className={`text-xs absolute bottom-2 opacity-70 ${msg.role === "user" ? "text-white right-3" : "text-black left-3"}`}>
